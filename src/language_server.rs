@@ -34,7 +34,7 @@ impl Backend {
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         let log_file_path = env::temp_dir().join(format!(
-            "{}-lsf.log",
+            "lever-{}.log",
             LanguageDefinition::get().language.name.to_lowercase()
         ));
 

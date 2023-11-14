@@ -38,7 +38,7 @@ pub fn get_tokens(
     let mut temp_array: Vec<SemanticToken> = Vec::new();
     for item in array {
         //Calculating the line diff between current and previous line
-        let line = ((item.line - prev) as i32).abs();
+        let line = item.line - prev;
 
         prev = item.line;
         //If line is greater than 0 then we save the temp array of tokens
@@ -77,7 +77,7 @@ pub fn get_tokens(
         }
 
         temp_array.push(SemanticToken {
-            delta_line: line as u32,
+            delta_line: line,
             delta_start: item.start,
             length: item.length,
             token_type: item.node_type,

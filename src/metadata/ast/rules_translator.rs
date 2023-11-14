@@ -49,9 +49,9 @@ impl RulesTranslator {
             None,
         );
         // TODO: has_error vs is_error
-        // for error_ts_node in children.iter().filter(|node| node.has_error()) {
-        //     current_node_id.append(self.new_error_node(error_ts_node, None), &mut self.arena);
-        // }
+        for error_ts_node in children.iter().filter(|node| node.is_error()) {
+            current_node_id.append(self.new_error_node(error_ts_node, None), &mut self.arena);
+        }
 
         for child in current_rule.children.iter() {
             self.query_parse_child(&children, child, current_node_id);
@@ -129,8 +129,8 @@ impl RulesTranslator {
                 match node_or_rule {
                     DirectOrRule::Direct(node_kind) => {
                         if ts_node.has_error() {
-                            // current_node_id
-                            //     .append(self.new_error_node(ts_node, None), &mut self.arena);
+                            current_node_id
+                                .append(self.new_error_node(ts_node, None), &mut self.arena);
                         }
 
                         current_node_id.append(

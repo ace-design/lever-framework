@@ -118,14 +118,14 @@ impl LanguageServer for Backend {
             let mut workspace = self.workspace.write().unwrap();
             (*workspace).add_file(doc.uri.clone(), &doc.text);
 
-            (*workspace).get_full_diagnostics(doc.uri.clone())
+            (*workspace).get_full_diagnostics(&doc.uri)
         };
 
         let mut plugin_result: PluginsResult = self
             .plugin_manager
             .write()
             .unwrap()
-            .run_plugins(doc.uri.clone(), OnState::Save);
+            .run_plugins(&doc.uri, OnState::Save);
 
         diagnostics.append(&mut plugin_result.diagnostic);
 
@@ -139,7 +139,7 @@ impl LanguageServer for Backend {
             let mut workspace = self.workspace.write().unwrap();
             (*workspace).update_file(&params.text_document.uri, params.content_changes);
 
-            (*workspace).get_quick_diagnostics(params.text_document.uri.clone())
+            (*workspace).get_quick_diagnostics(&params.text_document.uri)
         };
 
         self.client
@@ -151,14 +151,14 @@ impl LanguageServer for Backend {
         let mut diagnostics = {
             let workspace = self.workspace.read().unwrap();
 
-            (*workspace).get_full_diagnostics(params.text_document.uri.clone())
+            (*workspace).get_full_diagnostics(&params.text_document.uri)
         };
 
         let mut plugin_result: PluginsResult = self
             .plugin_manager
             .write()
             .unwrap()
-            .run_plugins(params.text_document.uri.clone(), OnState::Save);
+            .run_plugins(&params.text_document.uri, OnState::Save);
 
         diagnostics.append(&mut plugin_result.diagnostic);
 
@@ -198,7 +198,7 @@ impl LanguageServer for Backend {
             let workspace = self.workspace.read().unwrap();
 
             (*workspace).get_hover_info(
-                params.text_document_position_params.text_document.uri,
+                &params.text_document_position_params.text_document.uri,
                 params.text_document_position_params.position,
             )
         };
@@ -220,7 +220,7 @@ impl LanguageServer for Backend {
         let response = {
             let workspace = self.workspace.read().unwrap();
 
-            Ok((*workspace).get_semantic_tokens(params.text_document.uri))
+            Ok((*workspace).get_semantic_tokens(&params.text_document.uri))
         };
 
         response
@@ -232,7 +232,7 @@ impl LanguageServer for Backend {
 
             (*workspace)
                 .get_completion(
-                    params.text_document_position.text_document.uri,
+                    &params.text_document_position.text_document.uri,
                     params.text_document_position.position,
                     params.context,
                 )
@@ -247,7 +247,7 @@ impl LanguageServer for Backend {
             let mut workspace = self.workspace.write().unwrap();
 
             Ok((*workspace).rename_symbol(
-                params.text_document_position.text_document.uri,
+                &params.text_document_position.text_document.uri,
                 params.text_document_position.position,
                 params.new_name,
             ))

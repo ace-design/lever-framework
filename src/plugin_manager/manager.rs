@@ -84,7 +84,7 @@ impl PluginManager {
         }
     }
 
-    pub fn run_plugins(&mut self, file: Url, state: OnState) -> PluginsResult {
+    pub fn run_plugins(&mut self, file: &Url, state: OnState) -> PluginsResult {
         let mut plugins_result: PluginsResult = PluginsResult::new();
         for plugin in self.plugins.clone().iter_mut() {
             let key = String::from("file");

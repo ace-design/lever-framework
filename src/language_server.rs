@@ -137,7 +137,7 @@ impl LanguageServer for Backend {
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let diagnostics = {
             let mut workspace = self.workspace.write().unwrap();
-            (*workspace).update_file(params.text_document.uri.clone(), params.content_changes);
+            (*workspace).update_file(&params.text_document.uri, params.content_changes);
 
             (*workspace).get_quick_diagnostics(params.text_document.uri.clone())
         };
@@ -182,7 +182,8 @@ impl LanguageServer for Backend {
         let maybe_location = {
             let workspace = self.workspace.read().unwrap();
 
-            (*workspace).get_definition_location(uri, params.text_document_position_params.position)
+            (*workspace)
+                .get_definition_location(&uri, params.text_document_position_params.position)
         };
 
         if let Some(location) = maybe_location {

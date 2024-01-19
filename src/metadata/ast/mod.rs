@@ -1,4 +1,4 @@
 mod rules_translator;
 mod tree;
 
-pub use tree::{Ast, Node, NodeKind, TypeDecType, VisitNode, Visitable};
+pub use tree::{Ast, Node, NodeKind, VisitNode, Visitable};

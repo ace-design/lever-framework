@@ -13,17 +13,20 @@ use crate::utils;
 pub struct File {
     pub uri: Url,
     pub source_code: String,
-    pub tree: Option<Tree>,
+    pub tree: Tree,
     pub symbol_table_manager: Arc<Mutex<SymbolTableManager>>,
     pub ast_manager: Arc<Mutex<AstManager>>,
+    parser: tree_sitter::Parser,
 }
 
 impl File {
-    pub fn new(uri: Url, source_code: &str, tree: &Option<Tree>) -> File {
-        let ast_manager = Arc::new(Mutex::new(AstManager::new(
-            source_code,
-            tree.to_owned().unwrap(),
-        )));
+    pub fn new(uri: Url, source_code: &str, tree_sitter_language: tree_sitter::Language) -> File {
+        let mut parser = Parser::new();
+        parser.set_language(tree_sitter_language).unwrap();
+
+        let tree = parser.parse(source_code, None).unwrap();
+
+        let ast_manager = Arc::new(Mutex::new(AstManager::new(source_code, tree.clone())));
 
         let symbol_table_manager = {
             let mut ast_manager = ast_manager.lock().unwrap();
@@ -36,13 +39,14 @@ impl File {
         File {
             uri,
             source_code: source_code.to_string(),
-            tree: tree.clone(),
+            tree,
             symbol_table_manager,
             ast_manager,
+            parser,
         }
     }
 
-    pub fn update(&mut self, changes: Vec<TextDocumentContentChangeEvent>, parser: &mut Parser) {
+    pub fn update(&mut self, changes: Vec<TextDocumentContentChangeEvent>) {
         for change in changes {
             let mut old_tree: Option<&Tree> = None;
             let text: String;
@@ -66,7 +70,7 @@ impl File {
                     .replace_range(start_byte..old_end_byte, &change.text);
 
                 text = self.source_code.clone();
-                let tree = self.tree.as_mut().unwrap();
+                let tree = &mut self.tree;
                 tree.edit(&edit);
                 old_tree = Some(tree);
             } else {
@@ -74,13 +78,13 @@ impl File {
                 text = change.text.clone();
             }
 
-            self.tree = parser.parse(text, old_tree);
+            self.tree = self.parser.parse(text, old_tree).unwrap();
         }
 
         let mut ast_manager = self.ast_manager.lock().unwrap();
         let mut st_manager = self.symbol_table_manager.lock().unwrap();
 
-        ast_manager.update(&self.source_code, self.tree.to_owned().unwrap());
+        ast_manager.update(&self.source_code, self.tree.to_owned());
         st_manager.update(ast_manager.get_ast());
 
         debug!("\nAST:\n{}", ast_manager);
@@ -112,15 +116,13 @@ impl File {
         hover::get_hover_info(&self.ast_manager, &self.symbol_table_manager, position)
     }
 
-    pub fn get_semantic_tokens(&self) -> Option<SemanticTokensResult> {
-        self.tree.as_ref().map(|ts_tree| {
-            semantic_tokens::get_tokens(
-                &self.ast_manager,
-                &self.symbol_table_manager,
-                ts_tree,
-                &self.source_code,
-            )
-        })
+    pub fn get_semantic_tokens(&self) -> SemanticTokensResult {
+        semantic_tokens::get_tokens(
+            &self.ast_manager,
+            &self.symbol_table_manager,
+            &self.tree,
+            &self.source_code,
+        )
     }
 
     pub fn get_definition_location(&self, position: Position) -> Option<Location> {

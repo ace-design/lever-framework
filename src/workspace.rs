@@ -50,7 +50,7 @@ pub struct Workspace {
     root_path: Option<PathBuf>,
     settings: Settings,
     url_node_map: HashMap<Url, NodeIndex>,
-    files_graph: Graph<File, Import>,
+    file_graph: Graph<File, Import>,
     tree_sitter_language: tree_sitter::Language,
 }
 
@@ -60,7 +60,7 @@ impl Workspace {
             root_path: None,
             settings: Settings::default(),
             url_node_map: HashMap::new(),
-            files_graph: Graph::new(),
+            file_graph: Graph::new(),
             tree_sitter_language,
         }
     }
@@ -84,7 +84,7 @@ impl Workspace {
         let import_paths = file.get_import_paths();
         debug!("Resolved import paths: {:?}", import_paths);
 
-        let new_file_index = self.files_graph.add_node(file);
+        let new_file_index = self.file_graph.add_node(file);
         self.url_node_map.insert(url, new_file_index);
 
         for path in import_paths {
@@ -93,16 +93,13 @@ impl Workspace {
                     let imported_file_url = Url::from_file_path(path.clone()).unwrap();
 
                     if let Some(imported_file_index) = self.url_node_map.get(&imported_file_url) {
-                        self.files_graph.add_edge(
-                            new_file_index,
-                            *imported_file_index,
-                            import_type,
-                        );
+                        self.file_graph
+                            .add_edge(new_file_index, *imported_file_index, import_type);
                     } else {
                         let content = fs::read_to_string(path).unwrap();
                         let imported_file_index = self.add_file(imported_file_url, &content);
                         if let Some(i) = imported_file_index {
-                            self.files_graph.add_edge(new_file_index, i, import_type);
+                            self.file_graph.add_edge(new_file_index, i, import_type);
                         }
                     }
                 }
@@ -112,10 +109,7 @@ impl Workspace {
             }
         }
 
-        debug!(
-            "File graph:\n{:?}",
-            Dot::with_config(&self.files_graph, &[])
-        );
+        debug!("File graph:\n{:?}", Dot::with_config(&self.file_graph, &[]));
 
         debug!("Map:\n{:?}", self.url_node_map);
 
@@ -126,12 +120,12 @@ impl Workspace {
 impl FileManagement for Workspace {
     fn get_file(&self, url: &Url) -> Option<&File> {
         let index = self.url_node_map.get(url)?;
-        self.files_graph.node_weight(*index)
+        self.file_graph.node_weight(*index)
     }
 
     fn get_file_mut(&mut self, url: &Url) -> Option<&mut File> {
         let index = self.url_node_map.get(url)?;
-        self.files_graph.node_weight_mut(*index)
+        self.file_graph.node_weight_mut(*index)
     }
 
     fn add_file(&mut self, url: Url, content: &str) {

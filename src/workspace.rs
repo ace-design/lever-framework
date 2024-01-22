@@ -100,7 +100,7 @@ impl Workspace {
                     }
                 }
                 Err(error_node_id) => {
-                    error!("Import problem");
+                    info!("Import problem");
                 }
             }
         }

@@ -271,45 +271,44 @@ impl SymbolTable {
     fn parse_types(&mut self, root_id: NodeId, ast_arena: &mut Arena<Node>) {
         for node_id in root_id.descendants(ast_arena) {
             if let language_def::Symbol::Init {
-                kind: _,
+                kind,
                 name_node,
                 type_node: Some(type_node_query),
             } = ast_arena.get(node_id).unwrap().get().symbol.clone()
             {
-                let type_node_id = node_id
-                    .children(ast_arena)
-                    .find(|id| {
-                        ast_arena.get(*id).unwrap().get().kind
-                            == NodeKind::Node(type_node_query.clone())
-                    })
-                    .unwrap();
-
-                if let Some(symbol_id) = ast_arena
-                    .get(type_node_id)
-                    .unwrap()
-                    .get()
-                    .linked_symbol
-                    .clone()
-                {
-                    let name_node_id = node_id
-                        .children(ast_arena)
-                        .find(|id| {
-                            ast_arena.get(*id).unwrap().get().kind
-                                == NodeKind::Node(name_node.clone())
-                        })
-                        .unwrap();
-
-                    if let Some(name_symbol_id) = ast_arena
-                        .get(name_node_id)
+                if let Some(type_node_id) = node_id.children(ast_arena).find(|id| {
+                    ast_arena.get(*id).unwrap().get().kind
+                        == NodeKind::Node(type_node_query.clone())
+                }) {
+                    if let Some(symbol_id) = ast_arena
+                        .get(type_node_id)
                         .unwrap()
                         .get()
                         .linked_symbol
                         .clone()
                     {
-                        self.get_symbol_mut(name_symbol_id)
+                        let name_node_id = node_id
+                            .children(ast_arena)
+                            .find(|id| {
+                                ast_arena.get(*id).unwrap().get().kind
+                                    == NodeKind::Node(name_node.clone())
+                            })
+                            .unwrap();
+
+                        if let Some(name_symbol_id) = ast_arena
+                            .get(name_node_id)
                             .unwrap()
-                            .set_type_symbol(symbol_id);
+                            .get()
+                            .linked_symbol
+                            .clone()
+                        {
+                            self.get_symbol_mut(name_symbol_id)
+                                .unwrap()
+                                .set_type_symbol(symbol_id);
+                        }
                     }
+                } else {
+                    error!("Failed to parse type of symbol {kind}. This is caused by a problem within the Lever rules file.");
                 }
             }
         }

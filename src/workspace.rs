@@ -1,6 +1,10 @@
 use std::{collections::HashMap, fs, path::PathBuf};
 
-use petgraph::{prelude::NodeIndex, Graph};
+use petgraph::{
+    dot::{Config, Dot},
+    prelude::NodeIndex,
+    Graph,
+};
 use serde_json::Value;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionItem, Diagnostic, HoverContents, Location, Position,
@@ -69,24 +73,16 @@ impl Workspace {
         self.settings = Settings::parse(settings);
         info!("Settings: {:?}", self.settings);
     }
-}
 
-impl FileManagement for Workspace {
-    fn get_file(&self, url: &Url) -> Option<&File> {
-        let index = self.url_node_map.get(url)?;
-        self.files_graph.node_weight(*index)
-    }
+    fn add_file(&mut self, url: Url, content: &str) -> Option<NodeIndex> {
+        if self.url_node_map.contains_key(&url) {
+            return None;
+        }
 
-    fn get_file_mut(&mut self, url: &Url) -> Option<&mut File> {
-        let index = self.url_node_map.get(url)?;
-        self.files_graph.node_weight_mut(*index)
-    }
-
-    fn add_file(&mut self, url: Url, content: &str) {
         let file = File::new(url.clone(), content, self.tree_sitter_language);
 
         let import_paths = file.get_import_paths();
-        info!("Resolved import paths: {:?}", import_paths);
+        debug!("Resolved import paths: {:?}", import_paths);
 
         let new_file_index = self.files_graph.add_node(file);
         self.url_node_map.insert(url, new_file_index);
@@ -104,7 +100,10 @@ impl FileManagement for Workspace {
                         );
                     } else {
                         let content = fs::read_to_string(path).unwrap();
-                        self.add_file(imported_file_url, &content);
+                        let imported_file_index = self.add_file(imported_file_url, &content);
+                        if let Some(i) = imported_file_index {
+                            self.files_graph.add_edge(new_file_index, i, import_type);
+                        }
                     }
                 }
                 Err(error_node_id) => {
@@ -112,6 +111,31 @@ impl FileManagement for Workspace {
                 }
             }
         }
+
+        debug!(
+            "File graph:\n{:?}",
+            Dot::with_config(&self.files_graph, &[])
+        );
+
+        debug!("Map:\n{:?}", self.url_node_map);
+
+        Some(new_file_index)
+    }
+}
+
+impl FileManagement for Workspace {
+    fn get_file(&self, url: &Url) -> Option<&File> {
+        let index = self.url_node_map.get(url)?;
+        self.files_graph.node_weight(*index)
+    }
+
+    fn get_file_mut(&mut self, url: &Url) -> Option<&mut File> {
+        let index = self.url_node_map.get(url)?;
+        self.files_graph.node_weight_mut(*index)
+    }
+
+    fn add_file(&mut self, url: Url, content: &str) {
+        self.add_file(url, content);
     }
 
     fn update_file(&mut self, url: &Url, changes: Vec<TextDocumentContentChangeEvent>) {

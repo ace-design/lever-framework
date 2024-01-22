@@ -1,4 +1,5 @@
 use std::env;
+use std::fmt::Debug;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -23,6 +24,15 @@ pub struct File {
     pub symbol_table_manager: Arc<Mutex<SymbolTableManager>>,
     pub ast_manager: Arc<Mutex<AstManager>>,
     parser: tree_sitter::Parser,
+}
+
+// Mainly used for debugging File graph
+impl Debug for File {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("File")
+            .field("name", &self.uri.path_segments().unwrap().last().unwrap())
+            .finish()
+    }
 }
 
 impl File {

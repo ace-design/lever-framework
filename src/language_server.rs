@@ -58,8 +58,6 @@ impl LanguageServer for Backend {
             error!("{info}");
         }));
 
-        info!("Initializing lsp");
-
         if let Some(root_uri) = params.root_uri.clone() {
             self.workspace
                 .write()
@@ -67,14 +65,15 @@ impl LanguageServer for Backend {
                 .set_root_path(root_uri.to_file_path().ok())
         }
 
+        info!(
+            "Inititalizing Language Server with options: {:?}",
+            params.initialization_options
+        );
         if let Some(options) = params.initialization_options {
-            info!("Init options: {}", options);
             self.plugin_manager
                 .write()
                 .unwrap()
                 .load_plugins(params.root_uri, options.to_string().as_str());
-        } else {
-            info!("Init options: NONE");
         }
 
         Ok(InitializeResult {

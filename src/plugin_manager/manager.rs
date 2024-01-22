@@ -118,8 +118,6 @@ impl PluginManager {
     }
 
     fn execute(&mut self, plugin: Plugin) -> Option<String> {
-        info!("Execute");
-
         // Replace "your_program" with the actual binary you want to execute
         let mut child = Command::new(plugin.path.clone())
             .stdin(Stdio::piped())
@@ -131,9 +129,7 @@ impl PluginManager {
         if let Some(mut stdin) = child.stdin.take() {
             let arguments = plugin.arguments;
             let json_str = to_string(&arguments).unwrap();
-            info!("a-{}", json_str);
             stdin.write_all(json_str.as_bytes()).unwrap();
-            info!("b");
         }
 
         // Wait for the child process to finish and capture its stdout

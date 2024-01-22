@@ -7,7 +7,7 @@ use serde::Deserialize;
 use tower_lsp::lsp_types::{Position, Range};
 
 use crate::{
-    language_def::{self, Symbol},
+    language_def::{self, Import, Symbol},
     lsp_mappings::HighlightType,
     metadata::symbol_table::SymbolId,
     utils,
@@ -62,6 +62,7 @@ pub struct Node {
     pub range: Range,
     pub content: String,
     pub symbol: Symbol,
+    pub import: Import,
     pub semantic_token_type: Option<HighlightType>,
     pub linked_symbol: Option<SymbolId>,
 }
@@ -72,6 +73,7 @@ impl Node {
         syntax_node: &tree_sitter::Node,
         source_code: &str,
         symbol: Symbol,
+        import: Import,
         semantic_token_type: Option<HighlightType>,
     ) -> Node {
         Node {
@@ -79,6 +81,7 @@ impl Node {
             range: utils::ts_range_to_lsp_range(syntax_node.range()),
             content: utils::get_node_text(syntax_node, source_code),
             symbol,
+            import,
             semantic_token_type,
             linked_symbol: None,
         }

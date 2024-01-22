@@ -54,6 +54,13 @@ impl LanguageServer for Backend {
 
         info!("Initializing lsp");
 
+        if let Some(root_uri) = params.root_uri.clone() {
+            self.workspace
+                .write()
+                .unwrap()
+                .set_root_path(root_uri.to_file_path().ok())
+        }
+
         if let Some(options) = params.initialization_options {
             info!("Init options: {}", options);
             self.plugin_manager

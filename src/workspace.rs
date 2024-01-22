@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use petgraph::{prelude::NodeIndex, Graph};
 use serde_json::Value;
@@ -36,21 +36,33 @@ pub trait LanguageActions {
     fn get_full_diagnostics(&self, url: &Url) -> Vec<Diagnostic>;
 }
 
+#[derive(Debug, Clone)]
+pub enum Import {
+    Local,
+    Library,
+}
+
 pub struct Workspace {
+    root_path: Option<PathBuf>,
     settings: Settings,
     url_node_map: HashMap<Url, NodeIndex>,
-    files_graph: Graph<File, ()>,
+    files_graph: Graph<File, Import>,
     tree_sitter_language: tree_sitter::Language,
 }
 
 impl Workspace {
     pub fn new(tree_sitter_language: tree_sitter::Language) -> Workspace {
         Workspace {
+            root_path: None,
             settings: Settings::default(),
             url_node_map: HashMap::new(),
             files_graph: Graph::new(),
             tree_sitter_language,
         }
+    }
+
+    pub fn set_root_path(&mut self, path: Option<PathBuf>) {
+        self.root_path = path;
     }
 
     pub fn update_settings(&mut self, settings: Value) {
@@ -71,10 +83,35 @@ impl FileManagement for Workspace {
     }
 
     fn add_file(&mut self, url: Url, content: &str) {
-        let index =
-            self.files_graph
-                .add_node(File::new(url.clone(), content, self.tree_sitter_language));
-        self.url_node_map.insert(url, index);
+        let file = File::new(url.clone(), content, self.tree_sitter_language);
+
+        let import_paths = file.get_import_paths();
+        info!("Resolved import paths: {:?}", import_paths);
+
+        let new_file_index = self.files_graph.add_node(file);
+        self.url_node_map.insert(url, new_file_index);
+
+        for path in import_paths {
+            match path {
+                Ok((import_type, path)) => {
+                    let imported_file_url = Url::from_file_path(path.clone()).unwrap();
+
+                    if let Some(imported_file_index) = self.url_node_map.get(&imported_file_url) {
+                        self.files_graph.add_edge(
+                            new_file_index,
+                            *imported_file_index,
+                            import_type,
+                        );
+                    } else {
+                        let content = fs::read_to_string(path).unwrap();
+                        self.add_file(imported_file_url, &content);
+                    }
+                }
+                Err(error_node_id) => {
+                    error!("Import problem");
+                }
+            }
+        }
     }
 
     fn update_file(&mut self, url: &Url, changes: Vec<TextDocumentContentChangeEvent>) {

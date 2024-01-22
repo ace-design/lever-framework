@@ -1,5 +1,8 @@
+use std::env;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+use indextree::NodeId;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionItem, Diagnostic, HoverContents, Location, Position,
     SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
@@ -7,8 +10,11 @@ use tower_lsp::lsp_types::{
 use tree_sitter::{InputEdit, Parser, Tree};
 
 use crate::features::{completion, diagnostics, goto, hover, rename, semantic_tokens};
-use crate::metadata::{AstEditor, AstManager, SymbolTableEditor, SymbolTableManager};
-use crate::utils;
+use crate::language_def::{Import, LanguageDefinition};
+use crate::metadata::{
+    AstEditor, AstManager, AstQuery, SymbolTableEditor, SymbolTableManager, Visitable,
+};
+use crate::{utils, workspace};
 
 pub struct File {
     pub uri: Url,
@@ -89,6 +95,74 @@ impl File {
 
         debug!("\nAST:\n{}", ast_manager);
         debug!("\nSymbol Table:\n{}", st_manager);
+    }
+
+    pub fn get_import_paths(&self) -> Vec<Result<(workspace::Import, PathBuf), NodeId>> {
+        let ast = self.ast_manager.lock().unwrap();
+        let visit = ast.visit_root();
+        let nodes = visit.get_descendants();
+
+        nodes
+            .iter()
+            .filter_map(|node| match node.get().import {
+                Import::Local => {
+                    let mut file_name = node.get().content.clone();
+
+                    // TODO: Remove this
+                    file_name.remove(0);
+                    file_name.remove(file_name.len() - 1);
+
+                    let mut curr_path = self.uri.to_file_path().unwrap();
+                    curr_path.pop(); // Get dir
+
+                    curr_path.push(file_name.clone());
+
+                    if curr_path.exists() {
+                        Some(Ok((workspace::Import::Local, curr_path)))
+                    } else {
+                        Some(Err(node.get_id()))
+                    }
+                }
+                Import::Library => {
+                    let lib_paths = &LanguageDefinition::get().language.library_paths;
+                    let file_name = &node.get().content;
+
+                    if let Some(path) = lib_paths.env_variables.iter().find_map(|var| {
+                        if let Ok(existing_var) = env::var(var) {
+                            if let Ok(mut path) = existing_var.parse::<PathBuf>() {
+                                path.push(file_name);
+                                if path.exists() {
+                                    return Some(path);
+                                }
+                            }
+                        }
+                        None
+                    }) {
+                        return Some(Ok((workspace::Import::Library, path)));
+                    }
+
+                    if cfg!(target_os = "windows") {
+                        if let Some(path) = utils::find_lib(&lib_paths.windows, file_name) {
+                            return Some(Ok((workspace::Import::Library, path)));
+                        }
+                    } else if cfg!(target_os = "macos") {
+                        if let Some(path) = utils::find_lib(&lib_paths.macos, file_name) {
+                            return Some(Ok((workspace::Import::Library, path)));
+                        }
+                    } else if cfg!(target_os = "linux") {
+                        if let Some(path) = utils::find_lib(&lib_paths.linux, file_name) {
+                            return Some(Ok((workspace::Import::Library, path)));
+                        }
+                    } else {
+                        error!("Unsupported platform.");
+                        panic!("Unsupported platform.");
+                    }
+
+                    Some(Err(node.get_id()))
+                }
+                Import::None => None,
+            })
+            .collect()
     }
 
     pub fn get_quick_diagnostics(&self) -> Vec<Diagnostic> {

@@ -2,7 +2,9 @@ use indextree::{Arena, NodeId};
 
 use super::{tree::Translator, Ast, Node, NodeKind};
 use crate::{
-    language_def::{Child, DirectOrRule, LanguageDefinition, Rule, Symbol, TreesitterNodeQuery},
+    language_def::{
+        Child, DirectOrRule, Import, LanguageDefinition, Rule, Symbol, TreesitterNodeQuery,
+    },
     lsp_mappings::HighlightType,
 };
 
@@ -46,6 +48,7 @@ impl RulesTranslator {
             NodeKind::Node(current_rule.node_name.clone()),
             current_ts_node,
             current_rule.symbol.clone(),
+            current_rule.import.clone(),
             None,
         );
         // TODO: has_error vs is_error
@@ -138,6 +141,7 @@ impl RulesTranslator {
                                 NodeKind::Node(node_kind.clone()),
                                 &target_node,
                                 Symbol::None,
+                                Import::None,
                                 child.highlight_type.clone(),
                             ),
                             &mut self.arena,
@@ -157,6 +161,7 @@ impl RulesTranslator {
         kind: NodeKind,
         syntax_node: &tree_sitter::Node,
         symbol: Symbol,
+        import: Import,
         semantic_token_type: Option<HighlightType>,
     ) -> NodeId {
         self.arena.new_node(Node::new(
@@ -164,6 +169,7 @@ impl RulesTranslator {
             syntax_node,
             &self.source_code,
             symbol,
+            import,
             semantic_token_type,
         ))
     }
@@ -178,6 +184,7 @@ impl RulesTranslator {
             syntax_node,
             &self.source_code,
             Symbol::None,
+            Import::None,
             None,
         ))
     }

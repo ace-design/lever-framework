@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::path::PathBuf;
 
 use itertools::Itertools;
 use serde::Deserialize;
@@ -15,6 +16,8 @@ pub struct Rule {
     pub symbol: Symbol,
     #[serde(default)]
     pub is_scope: bool,
+    #[serde(default)]
+    pub import: Import,
     #[serde(default)]
     pub children: Vec<Child>,
 }
@@ -57,6 +60,14 @@ pub enum Symbol {
     None,
 }
 
+#[derive(Debug, PartialEq, Deserialize, Clone, Default)]
+pub enum Import {
+    Local,
+    Library,
+    #[default]
+    None,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct SymbolDef {
     pub name: String,
@@ -68,6 +79,15 @@ pub struct SymbolDef {
 pub struct Language {
     pub name: String,
     pub file_extensions: Vec<String>,
+    pub library_paths: LibraryPaths,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct LibraryPaths {
+    pub env_variables: Vec<String>,
+    pub linux: Vec<PathBuf>,
+    pub windows: Vec<PathBuf>,
+    pub macos: Vec<PathBuf>,
 }
 
 #[derive(Debug, Deserialize)]

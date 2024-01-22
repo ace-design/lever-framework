@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use tower_lsp::lsp_types::Position;
 use tree_sitter::Point;
 
@@ -54,6 +56,17 @@ pub fn calculate_end_point(start: Point, new_content: &str) -> Point {
 
 pub fn get_node_text(node: &tree_sitter::Node, source_code: &str) -> String {
     node.utf8_text(source_code.as_bytes()).unwrap().to_string()
+}
+
+pub fn find_lib(paths: &[PathBuf], file_name: &str) -> Option<PathBuf> {
+    paths.iter().find_map(|path| {
+        let mut path = path.clone();
+        path.push(file_name);
+        if path.exists() {
+            return Some(path);
+        }
+        None
+    })
 }
 
 #[cfg(test)]

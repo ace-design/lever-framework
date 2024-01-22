@@ -28,6 +28,12 @@ impl Backend {
             plugin_manager: PluginManager::new().into(),
         }
     }
+
+    // TODO: Test this function
+    pub fn publish_diagnostics(&self, uri: Url, diags: Vec<Diagnostic>) {
+        let client = self.client.clone();
+        tokio::spawn(async move { client.publish_diagnostics(uri, diags, None).await });
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -130,9 +136,9 @@ impl LanguageServer for Backend {
 
         let mut diagnostics = {
             let mut workspace = self.workspace.write().unwrap();
-            (*workspace).add_file(doc.uri.clone(), &doc.text);
+            workspace.add_file(doc.uri.clone(), &doc.text);
 
-            (*workspace).get_full_diagnostics(&doc.uri)
+            workspace.get_full_diagnostics(&doc.uri)
         };
 
         let mut plugin_result: PluginsResult = self
@@ -151,9 +157,9 @@ impl LanguageServer for Backend {
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let diagnostics = {
             let mut workspace = self.workspace.write().unwrap();
-            (*workspace).update_file(&params.text_document.uri, params.content_changes);
+            workspace.update_file(&params.text_document.uri, params.content_changes);
 
-            (*workspace).get_quick_diagnostics(&params.text_document.uri)
+            workspace.get_quick_diagnostics(&params.text_document.uri)
         };
 
         self.client
@@ -165,7 +171,7 @@ impl LanguageServer for Backend {
         let mut diagnostics = {
             let workspace = self.workspace.read().unwrap();
 
-            (*workspace).get_full_diagnostics(&params.text_document.uri)
+            workspace.get_full_diagnostics(&params.text_document.uri)
         };
 
         let mut plugin_result: PluginsResult = self
@@ -196,8 +202,7 @@ impl LanguageServer for Backend {
         let maybe_location = {
             let workspace = self.workspace.read().unwrap();
 
-            (*workspace)
-                .get_definition_location(&uri, params.text_document_position_params.position)
+            workspace.get_definition_location(&uri, params.text_document_position_params.position)
         };
 
         if let Some(location) = maybe_location {
@@ -211,7 +216,7 @@ impl LanguageServer for Backend {
         let maybe_hover_info = {
             let workspace = self.workspace.read().unwrap();
 
-            (*workspace).get_hover_info(
+            workspace.get_hover_info(
                 &params.text_document_position_params.text_document.uri,
                 params.text_document_position_params.position,
             )
@@ -234,7 +239,7 @@ impl LanguageServer for Backend {
         let response = {
             let workspace = self.workspace.read().unwrap();
 
-            Ok((*workspace).get_semantic_tokens(&params.text_document.uri))
+            Ok(workspace.get_semantic_tokens(&params.text_document.uri))
         };
 
         response
@@ -244,7 +249,7 @@ impl LanguageServer for Backend {
         let completion_list = {
             let workspace = self.workspace.read().unwrap();
 
-            (*workspace)
+            workspace
                 .get_completion(
                     &params.text_document_position.text_document.uri,
                     params.text_document_position.position,
@@ -260,7 +265,7 @@ impl LanguageServer for Backend {
         let response = {
             let mut workspace = self.workspace.write().unwrap();
 
-            Ok((*workspace).rename_symbol(
+            Ok(workspace.rename_symbol(
                 &params.text_document_position.text_document.uri,
                 params.text_document_position.position,
                 params.new_name,
@@ -272,6 +277,6 @@ impl LanguageServer for Backend {
 
     async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
         let mut workspace = self.workspace.write().unwrap();
-        (*workspace).update_settings(params.settings);
+        workspace.update_settings(params.settings);
     }
 }

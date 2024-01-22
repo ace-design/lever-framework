@@ -1,10 +1,6 @@
 use std::{collections::HashMap, fs, path::PathBuf};
 
-use petgraph::{
-    dot::{Config, Dot},
-    prelude::NodeIndex,
-    Graph,
-};
+use petgraph::{dot::Dot, prelude::NodeIndex, Graph};
 use serde_json::Value;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionItem, Diagnostic, HoverContents, Location, Position,
@@ -110,8 +106,6 @@ impl Workspace {
         }
 
         debug!("File graph:\n{:?}", Dot::with_config(&self.file_graph, &[]));
-
-        debug!("Map:\n{:?}", self.url_node_map);
 
         Some(new_file_index)
     }

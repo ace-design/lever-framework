@@ -36,6 +36,7 @@ pub trait SymbolTableActions {
     fn get_symbol_mut(&mut self, id: SymbolId) -> Option<&mut Symbol>;
     fn get_all_symbols(&self) -> Vec<Symbol>;
     fn get_symbols_in_scope_at_pos(&self, position: Position) -> Vec<Symbol>;
+    fn get_symbols_at_root(&self) -> Vec<Symbol>;
     fn get_symbols_in_scope(&self, scope_id: ScopeId) -> Vec<Symbol>;
     fn get_top_level_symbols(&self) -> Vec<Symbol>;
     fn get_symbol_at_pos(&self, name: String, position: Position) -> Option<&Symbol>;
@@ -51,6 +52,16 @@ impl SymbolTableActions for SymbolTable {
     fn get_symbol_mut(&mut self, id: SymbolId) -> Option<&mut Symbol> {
         let scope_table = self.arena.get_mut(id.symbol_table_id)?.get_mut();
         scope_table.symbols.get_mut(id.index)
+    }
+
+    fn get_all_symbols(&self) -> Vec<Symbol> {
+        let mut symbols: Vec<Symbol> = Vec::new();
+
+        for child_id in self.root_id.unwrap().descendants(&self.arena) {
+            symbols.append(&mut self.arena.get(child_id).unwrap().get().symbols.clone());
+        }
+
+        symbols
     }
 
     fn get_symbols_in_scope_at_pos(&self, position: Position) -> Vec<Symbol> {
@@ -85,6 +96,18 @@ impl SymbolTableActions for SymbolTable {
         symbols
     }
 
+    fn get_symbols_at_root(&self) -> Vec<Symbol> {
+        if let Some(root_id) = self.root_id {
+            self.arena.get(root_id).unwrap().get().symbols.clone()
+        } else {
+            vec![]
+        }
+    }
+
+    fn get_symbols_in_scope(&self, scope_id: ScopeId) -> Vec<Symbol> {
+        self.arena.get(scope_id).unwrap().get().symbols.clone()
+    }
+
     fn get_top_level_symbols(&self) -> Vec<Symbol> {
         self.arena
             .get(self.root_id.unwrap())
@@ -92,15 +115,6 @@ impl SymbolTableActions for SymbolTable {
             .get()
             .symbols
             .clone()
-    }
-
-    fn rename_symbol(&mut self, id: usize, new_name: String) {
-        for scope in self.arena.iter_mut() {
-            if let Some(symbol) = scope.get_mut().symbols.get_mut(id) {
-                symbol.name = new_name;
-                break;
-            }
-        }
     }
 
     fn get_symbol_at_pos(&self, name: String, position: Position) -> Option<&Symbol> {
@@ -117,18 +131,13 @@ impl SymbolTableActions for SymbolTable {
         None
     }
 
-    fn get_all_symbols(&self) -> Vec<Symbol> {
-        let mut symbols: Vec<Symbol> = Vec::new();
-
-        for child_id in self.root_id.unwrap().descendants(&self.arena) {
-            symbols.append(&mut self.arena.get(child_id).unwrap().get().symbols.clone());
+    fn rename_symbol(&mut self, id: usize, new_name: String) {
+        for scope in self.arena.iter_mut() {
+            if let Some(symbol) = scope.get_mut().symbols.get_mut(id) {
+                symbol.name = new_name;
+                break;
+            }
         }
-
-        symbols
-    }
-
-    fn get_symbols_in_scope(&self, scope_id: ScopeId) -> Vec<Symbol> {
-        self.arena.get(scope_id).unwrap().get().symbols.clone()
     }
 }
 

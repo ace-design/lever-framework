@@ -1,10 +1,12 @@
 use std::{collections::HashMap, fs, path::PathBuf};
 
+use petgraph::visit::EdgeRef;
+use petgraph::EdgeDirection;
 use petgraph::{dot::Dot, prelude::NodeIndex, Graph};
 use serde_json::Value;
 use tower_lsp::lsp_types::{
-    CompletionContext, CompletionItem, Diagnostic, HoverContents, Location, Position,
-    SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
+    CompletionContext, CompletionItem, CompletionTriggerKind, Diagnostic, HoverContents, Location,
+    Position, SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
 };
 
 use crate::{file::File, settings::Settings};
@@ -114,6 +116,18 @@ impl Workspace {
 
         Some(new_file_index)
     }
+
+    fn clear_outgoing_edges(&mut self, file_index: &NodeIndex) {
+        let outgoing_edges: Vec<_> = self
+            .file_graph
+            .edges_directed(*file_index, EdgeDirection::Outgoing)
+            .map(|edge| edge.id())
+            .collect();
+
+        for id in outgoing_edges {
+            self.file_graph.remove_edge(id);
+        }
+    }
 }
 
 impl FileManagement for Workspace {
@@ -134,6 +148,8 @@ impl FileManagement for Workspace {
     fn update_file(&mut self, url: &Url, changes: Vec<TextDocumentContentChangeEvent>) {
         crate::features::diagnostics::ImportErrors::clear(url);
         let file_index = *self.url_node_map.get(url).unwrap();
+        self.clear_outgoing_edges(&file_index);
+
         let file = self.get_file_mut(url).unwrap();
 
         file.update(changes);
@@ -144,21 +160,12 @@ impl FileManagement for Workspace {
                     let imported_file_url = Url::from_file_path(path.clone()).unwrap();
 
                     if let Some(imported_file_index) = self.url_node_map.get(&imported_file_url) {
-                        if self
-                            .file_graph
-                            .find_edge(file_index, *imported_file_index)
-                            .is_none()
-                        {
-                            self.file_graph
-                                .add_edge(file_index, *imported_file_index, import_type);
-                        }
-                    } else {
-                        let content = fs::read_to_string(path).unwrap();
+                        self.file_graph
+                            .add_edge(file_index, *imported_file_index, import_type);
+                    } else if let Ok(content) = fs::read_to_string(path) {
                         let imported_file_index = self.add_file(imported_file_url, &content);
                         if let Some(i) = imported_file_index {
-                            if self.file_graph.find_edge(file_index, i).is_none() {
-                                self.file_graph.add_edge(file_index, i, import_type);
-                            }
+                            self.file_graph.add_edge(file_index, i, import_type);
                         }
                     }
                 }
@@ -170,6 +177,8 @@ impl FileManagement for Workspace {
                 }
             }
         }
+
+        debug!("File graph:\n{:?}", Dot::with_config(&self.file_graph, &[]));
     }
 }
 
@@ -203,9 +212,28 @@ impl LanguageActions for Workspace {
         position: Position,
         context: Option<CompletionContext>,
     ) -> Option<Vec<CompletionItem>> {
+        let file_index = *self.url_node_map.get(url).unwrap();
         let file = self.get_file(url)?;
 
-        file.get_completion_list(position, context)
+        if context.is_none()
+            || context.clone().unwrap().trigger_kind == CompletionTriggerKind::INVOKED
+        {
+            if let Some(mut items) = file.get_completion_list(position, context) {
+                for edge in self
+                    .file_graph
+                    .edges_directed(file_index, EdgeDirection::Outgoing)
+                {
+                    let imported_file = self.file_graph.node_weight(edge.target()).unwrap();
+                    debug!("{}", imported_file.uri.to_string());
+                    items.append(&mut imported_file.get_import_completion_list());
+                }
+                Some(items)
+            } else {
+                None
+            }
+        } else {
+            file.get_completion_list(position, context)
+        }
     }
 
     fn get_hover_info(&self, url: &Url, position: Position) -> Option<HoverContents> {

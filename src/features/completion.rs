@@ -5,7 +5,8 @@ use crate::{
     metadata::{AstQuery, SymbolTableQuery, Visitable},
 };
 use tower_lsp::lsp_types::{
-    CompletionContext, CompletionItem, CompletionItemKind, CompletionTriggerKind, Position,
+    CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+    CompletionTriggerKind, Position, Url,
 };
 
 fn default_list(
@@ -34,6 +35,27 @@ fn get_symbol_completion_type(symbol_kind: String) -> Option<CompletionItemKind>
             .completion_type
             .get(),
     )
+}
+
+pub fn get_imported_list(
+    uri: &Url,
+    st_query: &Arc<Mutex<impl SymbolTableQuery>>,
+) -> Vec<CompletionItem> {
+    let query = st_query.lock().unwrap();
+
+    query
+        .get_symbols_at_root()
+        .iter()
+        .map(|s| CompletionItem {
+            label: s.get_name(),
+            label_details: Some(CompletionItemLabelDetails {
+                detail: Some(uri.path_segments().unwrap().last().unwrap().to_string()),
+                description: None,
+            }),
+            kind: get_symbol_completion_type(s.get_kind()),
+            ..Default::default()
+        })
+        .collect()
 }
 
 pub fn get_list(

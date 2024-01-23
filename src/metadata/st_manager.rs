@@ -14,6 +14,7 @@ pub trait SymbolTableEditor {
 
 pub trait SymbolTableQuery {
     fn get_symbols_at_pos(&self, position: Position) -> Vec<Symbol>;
+    fn get_symbols_at_root(&self) -> Vec<Symbol>;
     fn get_symbols_in_scope(&self, scope_id: ScopeId) -> Vec<Symbol>;
     fn get_symbol_at_pos(&self, name: String, position: Position) -> Option<&Symbol>;
     fn get_all_symbols(&self) -> Vec<Symbol>;
@@ -43,6 +44,14 @@ impl SymbolTableQuery for SymbolTableManager {
         self.symbol_table.get_symbols_in_scope_at_pos(position)
     }
 
+    fn get_symbols_at_root(&self) -> Vec<Symbol> {
+        self.symbol_table.get_symbols_at_root()
+    }
+
+    fn get_symbols_in_scope(&self, scope_id: ScopeId) -> Vec<Symbol> {
+        self.symbol_table.get_symbols_in_scope(scope_id)
+    }
+
     fn get_symbol_at_pos(&self, name: String, position: Position) -> Option<&Symbol> {
         self.symbol_table.get_symbol_at_pos(name, position)
     }
@@ -53,10 +62,6 @@ impl SymbolTableQuery for SymbolTableManager {
 
     fn get_symbol(&self, symbol_id: SymbolId) -> Option<&Symbol> {
         self.symbol_table.get_symbol(symbol_id)
-    }
-
-    fn get_symbols_in_scope(&self, scope_id: ScopeId) -> Vec<Symbol> {
-        self.symbol_table.get_symbols_in_scope(scope_id)
     }
 }
 

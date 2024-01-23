@@ -194,6 +194,10 @@ impl File {
         )
     }
 
+    pub fn get_import_completion_list(&self) -> Vec<CompletionItem> {
+        completion::get_imported_list(&self.uri, &self.symbol_table_manager)
+    }
+
     pub fn get_hover_info(&self, position: Position) -> Option<HoverContents> {
         hover::get_hover_info(&self.ast_manager, &self.symbol_table_manager, position)
     }

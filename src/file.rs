@@ -3,9 +3,8 @@ use std::fmt::Debug;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use indextree::NodeId;
 use tower_lsp::lsp_types::{
-    CompletionContext, CompletionItem, Diagnostic, HoverContents, Location, Position,
+    self, CompletionContext, CompletionItem, Diagnostic, HoverContents, Location, Position,
     SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
 };
 use tree_sitter::{InputEdit, Parser, Tree};
@@ -107,7 +106,7 @@ impl File {
         debug!("\nSymbol Table:\n{}", st_manager);
     }
 
-    pub fn get_import_paths(&self) -> Vec<Result<(workspace::Import, PathBuf), NodeId>> {
+    pub fn get_import_paths(&self) -> Vec<Result<(workspace::Import, PathBuf), lsp_types::Range>> {
         let ast = self.ast_manager.lock().unwrap();
         let visit = ast.visit_root();
         let nodes = visit.get_descendants();
@@ -130,7 +129,7 @@ impl File {
                     if curr_path.exists() {
                         Some(Ok((workspace::Import::Local, curr_path)))
                     } else {
-                        Some(Err(node.get_id()))
+                        Some(Err(node.get().range))
                     }
                 }
                 Import::Library => {
@@ -164,11 +163,10 @@ impl File {
                             return Some(Ok((workspace::Import::Library, path)));
                         }
                     } else {
-                        error!("Unsupported platform.");
-                        panic!("Unsupported platform.");
+                        error!("Unsupported platform for imports, all file imports will fail.");
                     }
 
-                    Some(Err(node.get_id()))
+                    Some(Err(node.get().range))
                 }
                 Import::None => None,
             })

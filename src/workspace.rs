@@ -81,7 +81,7 @@ impl Workspace {
         debug!("Resolved import paths: {:?}", import_paths);
 
         let new_file_index = self.file_graph.add_node(file);
-        self.url_node_map.insert(url, new_file_index);
+        self.url_node_map.insert(url.clone(), new_file_index);
 
         for path in import_paths {
             match path {
@@ -99,8 +99,13 @@ impl Workspace {
                         }
                     }
                 }
-                Err(error_node_id) => {
+                Err(range) => {
                     info!("Import problem");
+
+                    crate::features::diagnostics::ImportErrors::add_error(
+                        url.clone(),
+                        Diagnostic::new_simple(range, String::from("File could not be found.")),
+                    );
                 }
             }
         }

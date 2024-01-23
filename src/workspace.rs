@@ -132,9 +132,44 @@ impl FileManagement for Workspace {
     }
 
     fn update_file(&mut self, url: &Url, changes: Vec<TextDocumentContentChangeEvent>) {
+        crate::features::diagnostics::ImportErrors::clear(url);
+        let file_index = *self.url_node_map.get(url).unwrap();
         let file = self.get_file_mut(url).unwrap();
 
         file.update(changes);
+
+        for path in file.get_import_paths() {
+            match path {
+                Ok((import_type, path)) => {
+                    let imported_file_url = Url::from_file_path(path.clone()).unwrap();
+
+                    if let Some(imported_file_index) = self.url_node_map.get(&imported_file_url) {
+                        if self
+                            .file_graph
+                            .find_edge(file_index, *imported_file_index)
+                            .is_none()
+                        {
+                            self.file_graph
+                                .add_edge(file_index, *imported_file_index, import_type);
+                        }
+                    } else {
+                        let content = fs::read_to_string(path).unwrap();
+                        let imported_file_index = self.add_file(imported_file_url, &content);
+                        if let Some(i) = imported_file_index {
+                            if self.file_graph.find_edge(file_index, i).is_none() {
+                                self.file_graph.add_edge(file_index, i, import_type);
+                            }
+                        }
+                    }
+                }
+                Err(range) => {
+                    crate::features::diagnostics::ImportErrors::add_error(
+                        url.clone(),
+                        Diagnostic::new_simple(range, String::from("File could not be found.")),
+                    );
+                }
+            }
+        }
     }
 }
 

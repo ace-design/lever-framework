@@ -174,11 +174,11 @@ impl File {
     }
 
     pub fn get_quick_diagnostics(&self) -> Vec<Diagnostic> {
-        diagnostics::get_quick_diagnostics(&self.ast_manager, &self.symbol_table_manager)
+        diagnostics::get_quick_diagnostics(&self.uri, &self.ast_manager, &self.symbol_table_manager)
     }
 
     pub fn get_full_diagnostics(&self) -> Vec<Diagnostic> {
-        diagnostics::get_full_diagnostics(&self.ast_manager, &self.symbol_table_manager)
+        diagnostics::get_full_diagnostics(&self.uri, &self.ast_manager, &self.symbol_table_manager)
     }
 
     pub fn get_completion_list(

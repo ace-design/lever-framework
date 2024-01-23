@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::metadata::{AstQuery, NodeKind, SymbolTableQuery, VisitNode, Visitable};
-use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
+use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity, Url};
 
 use super::provider::DiagnosticProvider;
 
@@ -9,6 +9,7 @@ pub struct Parse {}
 
 impl DiagnosticProvider for Parse {
     fn get_diagnostics(
+        _uri: &Url,
         ast_query: &Arc<Mutex<impl AstQuery>>,
         _symbol_table_query: &Arc<Mutex<impl SymbolTableQuery>>,
     ) -> Vec<Diagnostic> {

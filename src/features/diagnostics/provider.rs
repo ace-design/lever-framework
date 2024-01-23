@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use tower_lsp::lsp_types::Diagnostic;
+use tower_lsp::lsp_types::{Diagnostic, Url};
 
 use super::parse::Parse;
 use crate::{
@@ -24,27 +24,30 @@ macro_rules! diags {
 
 pub trait DiagnosticProvider {
     fn get_diagnostics(
+        uri: &Url,
         ast_query: &Arc<Mutex<impl AstQuery>>,
         symbol_table_query: &Arc<Mutex<impl SymbolTableQuery>>,
     ) -> Vec<Diagnostic>;
 }
 
 pub fn get_quick_diagnostics(
+    uri: &Url,
     ast_query: &Arc<Mutex<impl AstQuery>>,
     symbol_table_query: &Arc<Mutex<impl SymbolTableQuery>>,
 ) -> Vec<Diagnostic> {
     diags![
-        Parse::get_diagnostics(ast_query, symbol_table_query),
-        ImportErrors::get_diagnostics(ast_query, symbol_table_query)
+        Parse::get_diagnostics(uri, ast_query, symbol_table_query),
+        ImportErrors::get_diagnostics(uri, ast_query, symbol_table_query)
     ]
 }
 
 pub fn get_full_diagnostics(
+    uri: &Url,
     ast_query: &Arc<Mutex<impl AstQuery>>,
     symbol_table_query: &Arc<Mutex<impl SymbolTableQuery>>,
 ) -> Vec<Diagnostic> {
     diags![
-        Parse::get_diagnostics(ast_query, symbol_table_query),
-        ImportErrors::get_diagnostics(ast_query, symbol_table_query)
+        Parse::get_diagnostics(uri, ast_query, symbol_table_query),
+        ImportErrors::get_diagnostics(uri, ast_query, symbol_table_query)
     ]
 }

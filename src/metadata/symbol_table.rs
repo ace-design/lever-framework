@@ -13,21 +13,31 @@ pub type ScopeId = NodeId;
 pub struct SymbolTable {
     arena: Arena<ScopeSymbolTable>,
     root_id: Option<ScopeId>,
-    undefined_list: Vec<Range>,
+    undefined_list: Vec<(String, Range)>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct SymbolId {
+    file_id: Option<petgraph::prelude::NodeIndex>,
     symbol_table_id: ScopeId,
     index: usize,
 }
 
 impl SymbolId {
-    pub fn new(symbol_table_id: ScopeId, index: usize) -> Self {
+    pub fn new(
+        file_id: Option<petgraph::prelude::NodeIndex>, // file_id only present if symbol is defined in a different file
+        symbol_table_id: ScopeId,
+        index: usize,
+    ) -> Self {
         Self {
+            file_id,
             symbol_table_id,
             index,
         }
+    }
+
+    pub fn get_file_id(&self) -> Option<petgraph::prelude::NodeIndex> {
+        self.file_id
     }
 }
 
@@ -45,6 +55,7 @@ pub trait SymbolTableActions {
 
 impl SymbolTableActions for SymbolTable {
     fn get_symbol(&self, id: SymbolId) -> Option<&Symbol> {
+        // Assumes file id is correct
         let scope_table = self.arena.get(id.symbol_table_id)?.get();
         scope_table.symbols.get(id.index)
     }
@@ -272,7 +283,7 @@ impl SymbolTable {
             }
 
             if !found {
-                self.undefined_list.push(node.range);
+                self.undefined_list.push((node.content.clone(), node.range));
             }
         }
     }

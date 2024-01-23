@@ -4,15 +4,15 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use tower_lsp::lsp_types::{
-    self, CompletionContext, CompletionItem, Diagnostic, HoverContents, Location, Position,
-    SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
+    self, CompletionContext, CompletionItem, Diagnostic, Location, Position, SemanticTokensResult,
+    TextDocumentContentChangeEvent, Url, WorkspaceEdit,
 };
 use tree_sitter::{InputEdit, Parser, Tree};
 
-use crate::features::{completion, diagnostics, goto, hover, rename, semantic_tokens};
+use crate::features::{completion, diagnostics, goto, rename, semantic_tokens};
 use crate::language_def::{Import, LanguageDefinition};
 use crate::metadata::{
-    AstEditor, AstManager, AstQuery, SymbolTableEditor, SymbolTableManager, Visitable,
+    AstEditor, AstManager, AstQuery, SymbolId, SymbolTableEditor, SymbolTableManager, Visitable,
 };
 use crate::{utils, workspace};
 
@@ -198,8 +198,12 @@ impl File {
         completion::get_imported_list(&self.uri, &self.symbol_table_manager)
     }
 
-    pub fn get_hover_info(&self, position: Position) -> Option<HoverContents> {
-        hover::get_hover_info(&self.ast_manager, &self.symbol_table_manager, position)
+    pub fn get_symbol_id_at_pos(&self, position: Position) -> Option<SymbolId> {
+        let ast_query = self.ast_manager.lock().unwrap();
+        let root_visit = ast_query.visit_root();
+        let node = root_visit.get_node_at_position(position)?;
+
+        node.get().linked_symbol.clone()
     }
 
     pub fn get_semantic_tokens(&self) -> SemanticTokensResult {

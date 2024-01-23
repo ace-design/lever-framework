@@ -9,6 +9,8 @@ use tower_lsp::lsp_types::{
     Position, SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
 };
 
+use crate::features::hover::get_hover_info;
+use crate::metadata::SymbolTableQuery;
 use crate::{file::File, settings::Settings};
 
 pub trait FileManagement {
@@ -239,7 +241,39 @@ impl LanguageActions for Workspace {
     fn get_hover_info(&self, url: &Url, position: Position) -> Option<HoverContents> {
         let file = self.get_file(url)?;
 
-        file.get_hover_info(position)
+        if let Some(symbol_id) = file.get_symbol_id_at_pos(position) {
+            let symbol = {
+                let st = if let Some(file_id) = symbol_id.get_file_id() {
+                    self.file_graph
+                        .node_weight(file_id)
+                        .unwrap()
+                        .symbol_table_manager
+                        .lock()
+                        .unwrap()
+                } else {
+                    file.symbol_table_manager.lock().unwrap()
+                };
+
+                st.get_symbol(symbol_id)?.clone()
+            };
+
+            let st = if let Some(file_id) = symbol.get_type_symbol()?.get_file_id() {
+                self.file_graph
+                    .node_weight(file_id)
+                    .unwrap()
+                    .symbol_table_manager
+                    .lock()
+                    .unwrap()
+            } else {
+                file.symbol_table_manager.lock().unwrap()
+            };
+
+            let type_symbol = st.get_symbol(symbol.get_type_symbol()?)?;
+
+            get_hover_info(&symbol, type_symbol)
+        } else {
+            None
+        }
     }
 
     fn get_quick_diagnostics(&self, url: &Url) -> Vec<Diagnostic> {

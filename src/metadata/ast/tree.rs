@@ -88,7 +88,7 @@ impl Node {
     }
 
     pub fn link(&mut self, symbol_table_id: NodeId, index: usize) {
-        self.linked_symbol = Some(SymbolId::new(symbol_table_id, index));
+        self.linked_symbol = Some(SymbolId::new(None, symbol_table_id, index));
     }
 }
 

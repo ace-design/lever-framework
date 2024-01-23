@@ -29,7 +29,6 @@ impl Backend {
         }
     }
 
-    // TODO: Test this function
     pub fn publish_diagnostics(&self, uri: Url, diags: Vec<Diagnostic>) {
         let client = self.client.clone();
         tokio::spawn(async move { client.publish_diagnostics(uri, diags, None).await });
@@ -148,9 +147,7 @@ impl LanguageServer for Backend {
 
         diagnostics.append(&mut plugin_result.diagnostic);
 
-        self.client
-            .publish_diagnostics(doc.uri, diagnostics, None)
-            .await;
+        self.publish_diagnostics(doc.uri, diagnostics)
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -161,9 +158,7 @@ impl LanguageServer for Backend {
             workspace.get_quick_diagnostics(&params.text_document.uri)
         };
 
-        self.client
-            .publish_diagnostics(params.text_document.uri, diagnostics, None)
-            .await;
+        self.publish_diagnostics(params.text_document.uri, diagnostics)
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
@@ -187,9 +182,7 @@ impl LanguageServer for Backend {
                 .await;
         }
 
-        self.client
-            .publish_diagnostics(params.text_document.uri, diagnostics, None)
-            .await;
+        self.publish_diagnostics(params.text_document.uri, diagnostics)
     }
 
     async fn goto_definition(

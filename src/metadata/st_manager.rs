@@ -21,6 +21,7 @@ pub trait SymbolTableQuery {
     fn get_symbol_at_pos(&self, name: String, position: Position) -> Option<&Symbol>;
     fn get_all_symbols(&self) -> Vec<Symbol>;
     fn get_symbol(&self, symbol_id: SymbolId) -> Option<&Symbol>;
+    fn get_symbol_mut(&mut self, symbol_id: SymbolId) -> Option<&mut Symbol>;
     fn get_unlinked_symbols(&self) -> Vec<(String, Range)>;
 }
 
@@ -68,6 +69,10 @@ impl SymbolTableQuery for SymbolTableManager {
 
     fn get_symbol(&self, symbol_id: SymbolId) -> Option<&Symbol> {
         self.symbol_table.get_symbol(symbol_id)
+    }
+
+    fn get_symbol_mut(&mut self, symbol_id: SymbolId) -> Option<&mut Symbol> {
+        self.symbol_table.get_symbol_mut(symbol_id)
     }
 
     fn get_unlinked_symbols(&self) -> Vec<(String, Range)> {

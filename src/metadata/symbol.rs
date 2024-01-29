@@ -1,4 +1,4 @@
-use petgraph::adj::NodeIndex;
+use petgraph::prelude::NodeIndex;
 use tower_lsp::lsp_types::Range;
 
 use super::symbol_table::ScopeId;
@@ -70,6 +70,10 @@ impl Symbol {
             usages: vec![],
             field_scope_id: None,
         }
+    }
+
+    pub fn add_usage(&mut self, usage: Usage) {
+        self.usages.push(usage);
     }
 }
 

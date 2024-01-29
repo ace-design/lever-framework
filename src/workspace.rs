@@ -10,7 +10,7 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::features::hover::get_hover_info;
-use crate::metadata::{AstEditor, AstQuery, SymbolId, SymbolTableQuery, Visitable};
+use crate::metadata::{AstEditor, AstQuery, SymbolId, SymbolTableQuery, Usage, Visitable};
 use crate::{file::File, settings::Settings};
 
 pub trait FileManagement {
@@ -136,8 +136,8 @@ impl Workspace {
             .lock()
             .unwrap()
             .get_symbols_at_root();
-        let file = self.file_graph.node_weight_mut(*file_index).unwrap();
 
+        let file = self.file_graph.node_weight(*file_index).unwrap();
         let unlinked_symbols: HashMap<String, Range> = file
             .symbol_table_manager
             .lock()
@@ -153,7 +153,10 @@ impl Workspace {
                 file.ast_manager
                     .lock()
                     .unwrap()
-                    .link_symbol(symbol_id, *range);
+                    .link_symbol(symbol_id.clone(), *range);
+                let mut imported_st = imported_file.symbol_table_manager.lock().unwrap();
+                let symbol = imported_st.get_symbol_mut(symbol_id).unwrap();
+                symbol.add_usage(Usage::new_external(*file_index, *range));
             }
         }
     }

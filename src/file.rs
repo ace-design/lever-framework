@@ -4,12 +4,12 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use tower_lsp::lsp_types::{
-    self, CompletionContext, CompletionItem, Diagnostic, Location, Position, SemanticTokensResult,
+    self, CompletionContext, CompletionItem, Diagnostic, Position, SemanticTokensResult,
     TextDocumentContentChangeEvent, Url, WorkspaceEdit,
 };
 use tree_sitter::{InputEdit, Parser, Tree};
 
-use crate::features::{completion, diagnostics, goto, rename, semantic_tokens};
+use crate::features::{completion, diagnostics, rename, semantic_tokens};
 use crate::language_def::{Import, LanguageDefinition};
 use crate::metadata::{
     AstEditor, AstManager, AstQuery, SymbolId, SymbolTableEditor, SymbolTableManager, Visitable,
@@ -213,12 +213,6 @@ impl File {
             &self.tree,
             &self.source_code,
         )
-    }
-
-    pub fn get_definition_location(&self, position: Position) -> Option<Location> {
-        let range =
-            goto::get_definition_range(&self.ast_manager, &self.symbol_table_manager, position)?;
-        Some(Location::new(self.uri.clone(), range))
     }
 
     pub fn rename_symbol(&self, position: Position, new_name: String) -> Option<WorkspaceEdit> {

@@ -1,11 +1,14 @@
 use core::fmt;
 
+use tower_lsp::lsp_types::Range;
+
 use crate::metadata::ast::VisitNode;
 
-use super::Ast;
+use super::{Ast, SymbolId};
 
 pub trait AstEditor {
     fn update(&mut self, content: &str, syntax_tree: tree_sitter::Tree);
+    fn link_symbol(&mut self, symbol_id: SymbolId, range: Range);
 }
 
 pub trait AstQuery {
@@ -43,5 +46,9 @@ impl AstQuery for AstManager {
 impl AstEditor for AstManager {
     fn update(&mut self, content: &str, syntax_tree: tree_sitter::Tree) {
         *self = AstManager::new(content, syntax_tree);
+    }
+
+    fn link_symbol(&mut self, symbol_id: SymbolId, range: Range) {
+        self.ast.link_symbol(symbol_id, range);
     }
 }

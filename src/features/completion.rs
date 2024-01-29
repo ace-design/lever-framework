@@ -45,6 +45,7 @@ pub fn get_imported_list(
 
     query
         .get_symbols_at_root()
+        .0
         .iter()
         .map(|s| CompletionItem {
             label: s.get_name(),

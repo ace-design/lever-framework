@@ -6,11 +6,11 @@ use petgraph::{dot::Dot, prelude::NodeIndex, Graph};
 use serde_json::Value;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionItem, CompletionTriggerKind, Diagnostic, HoverContents, Location,
-    Position, SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
+    Position, Range, SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
 };
 
 use crate::features::hover::get_hover_info;
-use crate::metadata::SymbolTableQuery;
+use crate::metadata::{AstEditor, AstQuery, SymbolId, SymbolTableQuery, Visitable};
 use crate::{file::File, settings::Settings};
 
 pub trait FileManagement {
@@ -92,15 +92,25 @@ impl Workspace {
                 Ok((import_type, path)) => {
                     let imported_file_url = Url::from_file_path(path.clone()).unwrap();
 
-                    if let Some(imported_file_index) = self.url_node_map.get(&imported_file_url) {
+                    let maybe_imported_file_index = if let Some(imported_file_index) =
+                        self.url_node_map.get(&imported_file_url)
+                    {
                         self.file_graph
                             .add_edge(new_file_index, *imported_file_index, import_type);
+                        Some(*imported_file_index)
                     } else {
                         let content = fs::read_to_string(path).unwrap();
                         let imported_file_index = self.add_file(imported_file_url, &content);
                         if let Some(i) = imported_file_index {
                             self.file_graph.add_edge(new_file_index, i, import_type);
+                            Some(i)
+                        } else {
+                            None
                         }
+                    };
+
+                    if let Some(imported_file_index) = maybe_imported_file_index {
+                        self.link_imported_symbols(&new_file_index, &imported_file_index)
                     }
                 }
                 Err(range) => {
@@ -117,6 +127,35 @@ impl Workspace {
         debug!("File graph:\n{:?}", Dot::with_config(&self.file_graph, &[]));
 
         Some(new_file_index)
+    }
+
+    fn link_imported_symbols(&mut self, file_index: &NodeIndex, imported_file_index: &NodeIndex) {
+        let imported_file = self.file_graph.node_weight(*imported_file_index).unwrap();
+        let (imported_symbols, scope_id) = imported_file
+            .symbol_table_manager
+            .lock()
+            .unwrap()
+            .get_symbols_at_root();
+        let file = self.file_graph.node_weight_mut(*file_index).unwrap();
+
+        let unlinked_symbols: HashMap<String, Range> = file
+            .symbol_table_manager
+            .lock()
+            .unwrap()
+            .get_unlinked_symbols()
+            .into_iter()
+            .collect();
+
+        for (i, s) in imported_symbols.into_iter().enumerate() {
+            if let Some(range) = unlinked_symbols.get(&s.get_name()) {
+                let symbol_id = SymbolId::new(Some(*imported_file_index), scope_id, i);
+
+                file.ast_manager
+                    .lock()
+                    .unwrap()
+                    .link_symbol(symbol_id, *range);
+            }
+        }
     }
 
     fn clear_outgoing_edges(&mut self, file_index: &NodeIndex) {
@@ -161,14 +200,25 @@ impl FileManagement for Workspace {
                 Ok((import_type, path)) => {
                     let imported_file_url = Url::from_file_path(path.clone()).unwrap();
 
-                    if let Some(imported_file_index) = self.url_node_map.get(&imported_file_url) {
+                    let maybe_imported_file_index = if let Some(imported_file_index) =
+                        self.url_node_map.get(&imported_file_url)
+                    {
                         self.file_graph
                             .add_edge(file_index, *imported_file_index, import_type);
-                    } else if let Ok(content) = fs::read_to_string(path) {
+                        Some(*imported_file_index)
+                    } else {
+                        let content = fs::read_to_string(path).unwrap();
                         let imported_file_index = self.add_file(imported_file_url, &content);
                         if let Some(i) = imported_file_index {
                             self.file_graph.add_edge(file_index, i, import_type);
+                            Some(i)
+                        } else {
+                            None
                         }
+                    };
+
+                    if let Some(imported_file_index) = maybe_imported_file_index {
+                        self.link_imported_symbols(&file_index, &imported_file_index)
                     }
                 }
                 Err(range) => {
@@ -188,7 +238,38 @@ impl LanguageActions for Workspace {
     fn get_definition_location(&self, url: &Url, symbol_position: Position) -> Option<Location> {
         let file = self.get_file(url)?;
 
-        file.get_definition_location(symbol_position)
+        let ast_query = file.ast_manager.lock().unwrap();
+        let root_visit = ast_query.visit_root();
+        let node = root_visit.get_node_at_position(symbol_position)?;
+
+        let symbol_id = node.get().linked_symbol.clone()?;
+
+        Some(if let Some(file_index) = symbol_id.get_file_id() {
+            let other_file = self.file_graph.node_weight(file_index).unwrap();
+            let range = other_file
+                .symbol_table_manager
+                .lock()
+                .unwrap()
+                .get_symbol(symbol_id)?
+                .get_definition_range();
+
+            Location {
+                uri: other_file.uri.clone(),
+                range,
+            }
+        } else {
+            let range = file
+                .symbol_table_manager
+                .lock()
+                .unwrap()
+                .get_symbol(symbol_id)?
+                .get_definition_range();
+
+            Location {
+                uri: url.clone(),
+                range,
+            }
+        })
     }
 
     fn rename_symbol(

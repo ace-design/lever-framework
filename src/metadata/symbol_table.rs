@@ -12,7 +12,7 @@ pub type ScopeId = NodeId;
 #[derive(Debug, Default, Clone)]
 pub struct SymbolTable {
     arena: Arena<ScopeSymbolTable>,
-    root_id: Option<ScopeId>,
+    pub root_id: Option<ScopeId>,
     undefined_list: Vec<(String, Range)>,
 }
 
@@ -51,6 +51,7 @@ pub trait SymbolTableActions {
     fn get_top_level_symbols(&self) -> Vec<Symbol>;
     fn get_symbol_at_pos(&self, name: String, position: Position) -> Option<&Symbol>;
     fn rename_symbol(&mut self, id: usize, new_name: String);
+    fn get_unlinked_symbols(&self) -> Vec<(String, Range)>;
 }
 
 impl SymbolTableActions for SymbolTable {
@@ -149,6 +150,10 @@ impl SymbolTableActions for SymbolTable {
                 break;
             }
         }
+    }
+
+    fn get_unlinked_symbols(&self) -> Vec<(String, Range)> {
+        self.undefined_list.clone()
     }
 }
 

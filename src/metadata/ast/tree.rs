@@ -198,6 +198,29 @@ impl Ast {
         ))
     }
 
+    pub fn link_symbol(&mut self, symbol_id: SymbolId, range: Range) {
+        let node_id = self.get_node_at_position(range.start);
+        let node = self.arena.get_mut(node_id).unwrap().get_mut();
+
+        node.linked_symbol = Some(symbol_id);
+    }
+
+    pub fn get_node_at_position(&mut self, position: Position) -> NodeId {
+        let mut child_id = self.root_id;
+
+        loop {
+            let children = child_id.children(&self.arena);
+            if let Some(new_child) = children.into_iter().find(|id| {
+                let range = self.arena.get(*id).unwrap().get().range;
+                position >= range.start && position <= range.end
+            }) {
+                child_id = new_child;
+            } else {
+                return child_id;
+            }
+        }
+    }
+
     pub fn visit_root(&self) -> VisitNode {
         VisitNode::new(&self.arena, self.root_id)
     }

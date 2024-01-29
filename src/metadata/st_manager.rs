@@ -4,7 +4,8 @@ use std::fmt::Debug;
 use super::symbol_table::{ScopeId, SymbolId, SymbolTable};
 use super::{Ast, Symbol};
 
-use tower_lsp::lsp_types::Position;
+use indextree::NodeId;
+use tower_lsp::lsp_types::{Position, Range};
 
 use crate::metadata::symbol_table::SymbolTableActions;
 
@@ -14,11 +15,12 @@ pub trait SymbolTableEditor {
 
 pub trait SymbolTableQuery {
     fn get_symbols_at_pos(&self, position: Position) -> Vec<Symbol>;
-    fn get_symbols_at_root(&self) -> Vec<Symbol>;
+    fn get_symbols_at_root(&self) -> (Vec<Symbol>, NodeId);
     fn get_symbols_in_scope(&self, scope_id: ScopeId) -> Vec<Symbol>;
     fn get_symbol_at_pos(&self, name: String, position: Position) -> Option<&Symbol>;
     fn get_all_symbols(&self) -> Vec<Symbol>;
     fn get_symbol(&self, symbol_id: SymbolId) -> Option<&Symbol>;
+    fn get_unlinked_symbols(&self) -> Vec<(String, Range)>;
 }
 
 #[derive(Debug, Clone)]
@@ -44,8 +46,11 @@ impl SymbolTableQuery for SymbolTableManager {
         self.symbol_table.get_symbols_in_scope_at_pos(position)
     }
 
-    fn get_symbols_at_root(&self) -> Vec<Symbol> {
-        self.symbol_table.get_symbols_at_root()
+    fn get_symbols_at_root(&self) -> (Vec<Symbol>, NodeId) {
+        (
+            self.symbol_table.get_symbols_at_root(),
+            self.symbol_table.root_id.unwrap(),
+        )
     }
 
     fn get_symbols_in_scope(&self, scope_id: ScopeId) -> Vec<Symbol> {
@@ -62,6 +67,10 @@ impl SymbolTableQuery for SymbolTableManager {
 
     fn get_symbol(&self, symbol_id: SymbolId) -> Option<&Symbol> {
         self.symbol_table.get_symbol(symbol_id)
+    }
+
+    fn get_unlinked_symbols(&self) -> Vec<(String, Range)> {
+        self.symbol_table.get_unlinked_symbols()
     }
 }
 

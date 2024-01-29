@@ -28,8 +28,8 @@ fn build_changes(uri: Url, symbol: &Symbol, new_name: String) -> HashMap<Url, Ve
 
     edits.push(TextEdit::new(symbol.def_position, new_name.clone()));
 
-    for range in symbol.usages.clone() {
-        edits.push(TextEdit::new(range, new_name.clone()));
+    for usage in symbol.usages.clone() {
+        edits.push(TextEdit::new(usage.range, new_name.clone()));
     }
 
     HashMap::from([(uri, edits)])

@@ -5,7 +5,7 @@ use crate::metadata::ast::{Ast, Visitable};
 use indextree::{Arena, NodeId};
 use tower_lsp::lsp_types::{Position, Range};
 
-use super::{Node, Symbol, SymbolId};
+use super::{symbol::Usage, Node, Symbol, SymbolId};
 
 pub type ScopeId = NodeId;
 
@@ -257,7 +257,7 @@ impl SymbolTable {
                     let symbol = &mut self.arena.get_mut(id).unwrap().get_mut().symbols[index];
                     node.link(id, index);
                     found = true;
-                    symbol.usages.push(node.range);
+                    symbol.usages.push(Usage::new_local(node.range));
                     break;
                 }
             }
@@ -355,7 +355,9 @@ impl SymbolTable {
                                             .get_mut(member_symbol_index)
                                             .unwrap()
                                             .usages
-                                            .push(arena.get(id).unwrap().get().range);
+                                            .push(Usage::new_local(
+                                                arena.get(id).unwrap().get().range,
+                                            ));
                                     }
                                 }
                             }
@@ -406,7 +408,9 @@ impl SymbolTable {
                                                     .get_mut(member_symbol_index)
                                                     .unwrap()
                                                     .usages
-                                                    .push(arena.get(id).unwrap().get().range);
+                                                    .push(Usage::new_local(
+                                                        arena.get(id).unwrap().get().range,
+                                                    ));
                                             }
                                         }
                                     }

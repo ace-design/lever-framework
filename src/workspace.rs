@@ -307,7 +307,6 @@ impl LanguageActions for Workspace {
                     .edges_directed(file_index, EdgeDirection::Outgoing)
                 {
                     let imported_file = self.file_graph.node_weight(edge.target()).unwrap();
-                    debug!("{}", imported_file.uri.to_string());
                     items.append(&mut imported_file.get_import_completion_list());
                 }
                 Some(items)

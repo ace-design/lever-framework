@@ -1,3 +1,4 @@
+use petgraph::adj::NodeIndex;
 use tower_lsp::lsp_types::Range;
 
 use super::symbol_table::ScopeId;
@@ -28,12 +29,34 @@ impl SymbolId {
 }
 
 #[derive(Debug, Clone)]
+pub struct Usage {
+    pub file_id: Option<NodeIndex>,
+    pub range: Range,
+}
+
+impl Usage {
+    pub fn new_external(file_id: NodeIndex, range: Range) -> Usage {
+        Usage {
+            file_id: Some(file_id),
+            range,
+        }
+    }
+
+    pub fn new_local(range: Range) -> Usage {
+        Usage {
+            file_id: None,
+            range,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Symbol {
     pub name: String,
     pub kind: String,
     pub type_symbol: Option<SymbolId>,
     pub def_position: Range,
-    pub usages: Vec<Range>,
+    pub usages: Vec<Usage>,
     pub field_scope_id: Option<ScopeId>,
 }
 

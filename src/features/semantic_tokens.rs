@@ -148,7 +148,8 @@ pub fn get_symbols_color_data(st_query: &Arc<Mutex<impl SymbolTableQuery>>) -> V
             node_type,
         });
 
-        for range in symbol.usages {
+        for usage in symbol.usages {
+            let range = usage.range;
             color_data.push(ColorData {
                 line: range.start.line,
                 start: range.start.character,

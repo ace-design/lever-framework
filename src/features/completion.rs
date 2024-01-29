@@ -17,8 +17,8 @@ fn default_list(
 
     for symbol in query.lock().unwrap().get_symbols_at_pos(position) {
         items.push(CompletionItem {
-            label: symbol.get_name(),
-            kind: get_symbol_completion_type(symbol.get_kind()),
+            label: symbol.name.clone(),
+            kind: get_symbol_completion_type(symbol.name),
             ..Default::default()
         })
     }
@@ -48,12 +48,12 @@ pub fn get_imported_list(
         .0
         .iter()
         .map(|s| CompletionItem {
-            label: s.get_name(),
+            label: s.name.clone(),
             label_details: Some(CompletionItemLabelDetails {
                 detail: Some(uri.path_segments().unwrap().last().unwrap().to_string()),
                 description: None,
             }),
-            kind: get_symbol_completion_type(s.get_kind()),
+            kind: get_symbol_completion_type(s.kind.clone()),
             ..Default::default()
         })
         .collect()
@@ -78,15 +78,15 @@ pub fn get_list(
             debug!("{:?}", node.get());
             if let Some(linked_symbol_id) = node.get().linked_symbol.clone() {
                 let st_query = st_query.lock().unwrap();
-                let type_symbol_id = st_query.get_symbol(linked_symbol_id)?.get_type_symbol()?;
+                let type_symbol_id = st_query.get_symbol(linked_symbol_id)?.type_symbol.clone()?;
                 if let Some(type_symbol) = st_query.get_symbol(type_symbol_id) {
-                    let symbols = st_query.get_symbols_in_scope(type_symbol.get_field_scope_id()?);
+                    let symbols = st_query.get_symbols_in_scope(type_symbol.field_scope_id?);
 
                     return Some(
                         symbols
                             .iter()
                             .map(|item| CompletionItem {
-                                label: item.get_name(),
+                                label: item.name.clone(),
                                 kind: Some(CompletionItemKind::FIELD),
                                 ..Default::default()
                             })

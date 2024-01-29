@@ -5,7 +5,7 @@ use crate::metadata::ast::{Ast, Visitable};
 use indextree::{Arena, NodeId};
 use tower_lsp::lsp_types::{Position, Range};
 
-use super::Node;
+use super::{Node, Symbol, SymbolId};
 
 pub type ScopeId = NodeId;
 
@@ -14,31 +14,6 @@ pub struct SymbolTable {
     arena: Arena<ScopeSymbolTable>,
     pub root_id: Option<ScopeId>,
     undefined_list: Vec<(String, Range)>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct SymbolId {
-    file_id: Option<petgraph::prelude::NodeIndex>,
-    symbol_table_id: ScopeId,
-    index: usize,
-}
-
-impl SymbolId {
-    pub fn new(
-        file_id: Option<petgraph::prelude::NodeIndex>, // file_id only present if symbol is defined in a different file
-        symbol_table_id: ScopeId,
-        index: usize,
-    ) -> Self {
-        Self {
-            file_id,
-            symbol_table_id,
-            index,
-        }
-    }
-
-    pub fn get_file_id(&self) -> Option<petgraph::prelude::NodeIndex> {
-        self.file_id
-    }
 }
 
 pub trait SymbolTableActions {
@@ -282,7 +257,7 @@ impl SymbolTable {
                     let symbol = &mut self.arena.get_mut(id).unwrap().get_mut().symbols[index];
                     node.link(id, index);
                     found = true;
-                    symbol.add_usage(node.range);
+                    symbol.usages.push(node.range);
                     break;
                 }
             }
@@ -327,9 +302,8 @@ impl SymbolTable {
                             .linked_symbol
                             .clone()
                         {
-                            self.get_symbol_mut(name_symbol_id)
-                                .unwrap()
-                                .set_type_symbol(symbol_id);
+                            self.get_symbol_mut(name_symbol_id).unwrap().type_symbol =
+                                Some(symbol_id);
                         }
                     }
                 } else {
@@ -380,7 +354,8 @@ impl SymbolTable {
                                             .symbols
                                             .get_mut(member_symbol_index)
                                             .unwrap()
-                                            .add_usage(arena.get(id).unwrap().get().range);
+                                            .usages
+                                            .push(arena.get(id).unwrap().get().range);
                                     }
                                 }
                             }
@@ -430,7 +405,8 @@ impl SymbolTable {
                                                     .symbols
                                                     .get_mut(member_symbol_index)
                                                     .unwrap()
-                                                    .add_usage(arena.get(id).unwrap().get().range);
+                                                    .usages
+                                                    .push(arena.get(id).unwrap().get().range);
                                             }
                                         }
                                     }
@@ -495,79 +471,5 @@ impl fmt::Display for ScopeSymbolTable {
         }
 
         fmt.write_str(&output)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Symbol {
-    name: String,
-    kind: String,
-    type_symbol: Option<SymbolId>,
-    def_position: Range,
-    usages: Vec<Range>,
-    field_scope_id: Option<ScopeId>,
-}
-
-impl Symbol {
-    pub fn new(name: String, kind: String, def_position: Range) -> Symbol {
-        Symbol {
-            name,
-            kind,
-            type_symbol: None,
-            def_position,
-            usages: vec![],
-            field_scope_id: None,
-        }
-    }
-
-    pub fn set_type_symbol(&mut self, id: SymbolId) {
-        self.type_symbol = Some(id)
-    }
-
-    pub fn get_type_symbol(&self) -> Option<SymbolId> {
-        self.type_symbol.clone()
-    }
-
-    pub fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
-    pub fn get_definition_range(&self) -> Range {
-        self.def_position
-    }
-
-    pub fn add_usage(&mut self, range: Range) {
-        self.usages.push(range);
-    }
-
-    pub fn get_usages(&self) -> &Vec<Range> {
-        &self.usages
-    }
-
-    pub fn get_kind(&self) -> String {
-        self.kind.clone()
-    }
-
-    pub fn get_field_scope_id(&self) -> Option<NodeId> {
-        self.field_scope_id
-    }
-}
-
-impl fmt::Display for Symbol {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.write_str(
-            format!(
-                "{0: <10} | {1: <15} | {2: <10} | {3: <10} | {4: <10}\n",
-                self.kind,
-                self.name,
-                format!(
-                    "l:{} c:{}",
-                    self.def_position.start.line, self.def_position.start.character
-                ),
-                self.usages.len(),
-                0 // TODO
-            )
-            .as_str(),
-        )
     }
 }

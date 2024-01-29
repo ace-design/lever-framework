@@ -1,7 +1,8 @@
 use core::fmt;
 use std::fmt::Debug;
 
-use super::symbol_table::{ScopeId, SymbolId, SymbolTable};
+use super::symbol::SymbolId;
+use super::symbol_table::{ScopeId, SymbolTable};
 use super::{Ast, Symbol};
 
 use indextree::NodeId;

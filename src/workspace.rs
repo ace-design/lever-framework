@@ -147,7 +147,7 @@ impl Workspace {
             .collect();
 
         for (i, s) in imported_symbols.into_iter().enumerate() {
-            if let Some(range) = unlinked_symbols.get(&s.get_name()) {
+            if let Some(range) = unlinked_symbols.get(&s.name) {
                 let symbol_id = SymbolId::new(Some(*imported_file_index), scope_id, i);
 
                 file.ast_manager
@@ -251,7 +251,7 @@ impl LanguageActions for Workspace {
                 .lock()
                 .unwrap()
                 .get_symbol(symbol_id)?
-                .get_definition_range();
+                .def_position;
 
             Location {
                 uri: other_file.uri.clone(),
@@ -263,7 +263,7 @@ impl LanguageActions for Workspace {
                 .lock()
                 .unwrap()
                 .get_symbol(symbol_id)?
-                .get_definition_range();
+                .def_position;
 
             Location {
                 uri: url.clone(),
@@ -338,7 +338,7 @@ impl LanguageActions for Workspace {
                 st.get_symbol(symbol_id)?.clone()
             };
 
-            let st = if let Some(file_id) = symbol.get_type_symbol()?.get_file_id() {
+            let st = if let Some(file_id) = symbol.type_symbol.clone()?.get_file_id() {
                 self.file_graph
                     .node_weight(file_id)
                     .unwrap()
@@ -349,7 +349,7 @@ impl LanguageActions for Workspace {
                 file.symbol_table_manager.lock().unwrap()
             };
 
-            let type_symbol = st.get_symbol(symbol.get_type_symbol()?)?;
+            let type_symbol = st.get_symbol(symbol.type_symbol.clone()?)?;
 
             get_hover_info(&symbol, type_symbol)
         } else {

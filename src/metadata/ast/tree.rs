@@ -9,7 +9,7 @@ use tower_lsp::lsp_types::{Position, Range};
 use crate::{
     language_def::{self, Import, Symbol},
     lsp_mappings::HighlightType,
-    metadata::symbol_table::SymbolId,
+    metadata::SymbolId,
     utils,
 };
 

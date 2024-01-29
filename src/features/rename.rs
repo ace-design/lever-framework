@@ -26,13 +26,10 @@ pub fn rename(
 fn build_changes(uri: Url, symbol: &Symbol, new_name: String) -> HashMap<Url, Vec<TextEdit>> {
     let mut edits: Vec<TextEdit> = Vec::new();
 
-    edits.push(TextEdit::new(
-        symbol.get_definition_range(),
-        new_name.clone(),
-    ));
+    edits.push(TextEdit::new(symbol.def_position, new_name.clone()));
 
-    for range in symbol.get_usages() {
-        edits.push(TextEdit::new(*range, new_name.clone()));
+    for range in symbol.usages.clone() {
+        edits.push(TextEdit::new(range, new_name.clone()));
     }
 
     HashMap::from([(uri, edits)])

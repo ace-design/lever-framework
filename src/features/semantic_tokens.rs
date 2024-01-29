@@ -135,12 +135,12 @@ pub fn get_symbols_color_data(st_query: &Arc<Mutex<impl SymbolTableQuery>>) -> V
 
     let mut color_data = vec![];
     for symbol in symbols {
-        let highlight_type = get_symbol_highlight_type(symbol.get_kind());
+        let highlight_type = get_symbol_highlight_type(symbol.kind);
         let node_type = *semantic_token_types_map
             .get(highlight_type.get().as_str())
             .unwrap() as u32;
 
-        let def_range = symbol.get_definition_range();
+        let def_range = symbol.def_position;
         color_data.push(ColorData {
             line: def_range.start.line,
             start: def_range.start.character,
@@ -148,7 +148,7 @@ pub fn get_symbols_color_data(st_query: &Arc<Mutex<impl SymbolTableQuery>>) -> V
             node_type,
         });
 
-        for range in symbol.get_usages() {
+        for range in symbol.usages {
             color_data.push(ColorData {
                 line: range.start.line,
                 start: range.start.character,

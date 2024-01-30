@@ -115,12 +115,7 @@ impl File {
             .iter()
             .filter_map(|node| match node.get().import {
                 Import::Local => {
-                    let mut file_name = node.get().content.clone();
-
-                    // TODO: Remove this
-                    file_name.remove(0);
-                    file_name.remove(file_name.len() - 1);
-
+                    let file_name = node.get().content.clone();
                     let mut curr_path = self.uri.to_file_path().unwrap();
                     curr_path.pop(); // Get dir
 

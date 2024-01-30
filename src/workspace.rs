@@ -6,11 +6,10 @@ use petgraph::{dot::Dot, prelude::NodeIndex, Graph};
 use serde_json::Value;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionItem, CompletionTriggerKind, Diagnostic, HoverContents, Location,
-    Position, Range, SemanticTokensResult, TextDocumentContentChangeEvent, TextEdit, Url,
-    WorkspaceEdit,
+    MarkedString, Position, Range, SemanticTokensResult, TextDocumentContentChangeEvent, TextEdit,
+    Url, WorkspaceEdit,
 };
 
-use crate::features::hover::get_hover_info;
 use crate::metadata::{AstEditor, AstQuery, SymbolId, SymbolTableQuery, Usage, Visitable};
 use crate::{file::File, settings::Settings};
 
@@ -424,7 +423,10 @@ impl LanguageActions for Workspace {
 
             let type_symbol = st.get_symbol(symbol.type_symbol.clone()?)?;
 
-            get_hover_info(&symbol, type_symbol)
+            Some(HoverContents::Scalar(MarkedString::String(format!(
+                "{}: {}",
+                symbol.name, type_symbol.name
+            ))))
         } else {
             None
         }

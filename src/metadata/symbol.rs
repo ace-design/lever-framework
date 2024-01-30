@@ -55,7 +55,7 @@ pub struct Symbol {
     pub name: String,
     pub kind: String,
     pub type_symbol: Option<SymbolId>,
-    pub def_position: Range,
+    pub def_range: Range,
     pub usages: Vec<Usage>,
     pub field_scope_id: Option<ScopeId>,
 }
@@ -66,7 +66,7 @@ impl Symbol {
             name,
             kind,
             type_symbol: None,
-            def_position,
+            def_range: def_position,
             usages: vec![],
             field_scope_id: None,
         }
@@ -86,7 +86,7 @@ impl std::fmt::Display for Symbol {
                 self.name,
                 format!(
                     "l:{} c:{}",
-                    self.def_position.start.line, self.def_position.start.character
+                    self.def_range.start.line, self.def_range.start.character
                 ),
                 self.usages.len(),
                 0 // TODO

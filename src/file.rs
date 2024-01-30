@@ -5,11 +5,11 @@ use std::sync::{Arc, Mutex};
 
 use tower_lsp::lsp_types::{
     self, CompletionContext, CompletionItem, Diagnostic, Position, SemanticTokensResult,
-    TextDocumentContentChangeEvent, Url, WorkspaceEdit,
+    TextDocumentContentChangeEvent, Url,
 };
 use tree_sitter::{InputEdit, Parser, Tree};
 
-use crate::features::{completion, diagnostics, rename, semantic_tokens};
+use crate::features::{completion, diagnostics, semantic_tokens};
 use crate::language_def::{Import, LanguageDefinition};
 use crate::metadata::{
     AstEditor, AstManager, AstQuery, SymbolId, SymbolTableEditor, SymbolTableManager, Visitable,
@@ -212,16 +212,6 @@ impl File {
             &self.symbol_table_manager,
             &self.tree,
             &self.source_code,
-        )
-    }
-
-    pub fn rename_symbol(&self, position: Position, new_name: String) -> Option<WorkspaceEdit> {
-        rename::rename(
-            &self.ast_manager,
-            &self.symbol_table_manager,
-            self.uri.clone(),
-            new_name,
-            position,
         )
     }
 }

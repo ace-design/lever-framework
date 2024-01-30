@@ -73,7 +73,7 @@ impl SymbolTableActions for SymbolTable {
                     subscope_exists = true;
 
                     let mut scope_symbols = scope.symbols.clone();
-                    scope_symbols.retain(|s| s.def_position.end < position);
+                    scope_symbols.retain(|s| s.def_range.end < position);
                     symbols.append(&mut scope_symbols);
                     break;
                 }

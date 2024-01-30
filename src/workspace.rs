@@ -6,7 +6,8 @@ use petgraph::{dot::Dot, prelude::NodeIndex, Graph};
 use serde_json::Value;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionItem, CompletionTriggerKind, Diagnostic, HoverContents, Location,
-    Position, Range, SemanticTokensResult, TextDocumentContentChangeEvent, Url, WorkspaceEdit,
+    Position, Range, SemanticTokensResult, TextDocumentContentChangeEvent, TextEdit, Url,
+    WorkspaceEdit,
 };
 
 use crate::features::hover::get_hover_info;
@@ -172,6 +173,17 @@ impl Workspace {
             self.file_graph.remove_edge(id);
         }
     }
+
+    fn is_local_import(&self, file_index: &NodeIndex, imported_file_index: &NodeIndex) -> bool {
+        let edge_index = self
+            .file_graph
+            .find_edge(*file_index, *imported_file_index)
+            .unwrap();
+
+        let import_type = self.file_graph.edge_weight(edge_index).unwrap();
+
+        matches!(import_type, Import::Local)
+    }
 }
 
 impl FileManagement for Workspace {
@@ -254,7 +266,7 @@ impl LanguageActions for Workspace {
                 .lock()
                 .unwrap()
                 .get_symbol(symbol_id)?
-                .def_position;
+                .def_range;
 
             Location {
                 uri: other_file.uri.clone(),
@@ -266,7 +278,7 @@ impl LanguageActions for Workspace {
                 .lock()
                 .unwrap()
                 .get_symbol(symbol_id)?
-                .def_position;
+                .def_range;
 
             Location {
                 uri: url.clone(),
@@ -283,7 +295,66 @@ impl LanguageActions for Workspace {
     ) -> Option<WorkspaceEdit> {
         let file = self.get_file_mut(url).unwrap();
 
-        file.rename_symbol(symbol_position, new_name)
+        let symbol_id = file
+            .ast_manager
+            .lock()
+            .unwrap()
+            .visit_root()
+            .get_node_at_position(symbol_position)?
+            .get()
+            .linked_symbol
+            .clone()?;
+
+        let mut changes: HashMap<Url, Vec<TextEdit>> = HashMap::new();
+        let symbol = if let Some(file_id) = symbol_id.file_id {
+            if !self.is_local_import(self.url_node_map.get(url)?, &file_id) {
+                // You should not edit files that are not local to the project
+                return None;
+            }
+
+            let file = self.file_graph.node_weight(file_id).unwrap();
+            let s = file
+                .symbol_table_manager
+                .lock()
+                .unwrap()
+                .get_symbol(symbol_id.clone())?
+                .clone();
+            changes.insert(
+                file.uri.clone(),
+                vec![TextEdit::new(s.def_range, new_name.clone())],
+            );
+            s
+        } else {
+            let s = file
+                .symbol_table_manager
+                .lock()
+                .unwrap()
+                .get_symbol(symbol_id.clone())?
+                .clone();
+            changes.insert(
+                url.clone(),
+                vec![TextEdit::new(s.def_range, new_name.clone())],
+            );
+            s
+        };
+
+        debug!("{:?}", symbol.usages);
+        for usage in symbol.usages {
+            if let Some(file_id) = usage.file_id {
+                let file_url = &self.file_graph.node_weight(file_id).unwrap().uri;
+                let file_edits = changes.entry(file_url.clone()).or_default();
+                file_edits.push(TextEdit::new(usage.range, new_name.clone()));
+            } else if let Some(file_id) = symbol_id.file_id {
+                let file_url = &self.file_graph.node_weight(file_id).unwrap().uri;
+                let file_edits = changes.entry(file_url.clone()).or_default();
+                file_edits.push(TextEdit::new(usage.range, new_name.clone()));
+            } else {
+                let file_edits = changes.entry(url.clone()).or_default();
+                file_edits.push(TextEdit::new(usage.range, new_name.clone()));
+            }
+        }
+
+        Some(WorkspaceEdit::new(changes))
     }
 
     fn get_semantic_tokens(&self, url: &Url) -> Option<SemanticTokensResult> {

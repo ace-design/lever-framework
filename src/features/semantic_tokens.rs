@@ -140,7 +140,7 @@ pub fn get_symbols_color_data(st_query: &Arc<Mutex<impl SymbolTableQuery>>) -> V
             .get(highlight_type.get().as_str())
             .unwrap() as u32;
 
-        let def_range = symbol.def_position;
+        let def_range = symbol.def_range;
         color_data.push(ColorData {
             line: def_range.start.line,
             start: def_range.start.character,

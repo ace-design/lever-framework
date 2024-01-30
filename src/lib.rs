@@ -1,7 +1,5 @@
-mod language_server;
-extern crate lazy_static;
-
 mod language_def;
+mod language_server;
 mod lsp_mappings;
 mod plugin_manager;
 mod project;

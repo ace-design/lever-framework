@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::{
     language_def::LanguageDefinition,
-    metadata::{AstQuery, SymbolTableQuery, Visitable},
+    project::{AstQuery, SymbolTableQuery, Visitable},
 };
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,

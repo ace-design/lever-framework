@@ -1,7 +1,7 @@
 use crate::{
     language_def::{self, LanguageDefinition},
     lsp_mappings::HighlightType,
-    metadata::{AstQuery, SymbolTableQuery, Visitable},
+    project::{AstQuery, SymbolTableQuery, Visitable},
     utils,
 };
 use std::{

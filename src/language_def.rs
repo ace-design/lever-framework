@@ -7,7 +7,7 @@ use tokio::sync::OnceCell;
 use tower_lsp::lsp_types::{self, SemanticTokensLegend};
 
 use crate::lsp_mappings::{HighlightType, SymbolCompletionType};
-use crate::metadata::NodeKind;
+use crate::project::NodeKind;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Rule {

@@ -10,8 +10,10 @@ use tower_lsp::lsp_types::{
     Url, WorkspaceEdit,
 };
 
-use crate::metadata::{AstEditor, AstQuery, SymbolId, SymbolTableQuery, Usage, Visitable};
-use crate::{file::File, settings::Settings};
+use super::metadata::{AstEditor, AstQuery, SymbolId, SymbolTableQuery, Usage, Visitable};
+use crate::settings::Settings;
+
+use super::file::File;
 
 pub trait FileManagement {
     fn get_file(&self, url: &Url) -> Option<&File>;
@@ -116,7 +118,7 @@ impl Workspace {
                 Err(range) => {
                     info!("Import problem");
 
-                    crate::features::diagnostics::ImportErrors::add_error(
+                    super::features::diagnostics::ImportErrors::add_error(
                         url.clone(),
                         Diagnostic::new_simple(range, String::from("File could not be found.")),
                     );
@@ -201,7 +203,7 @@ impl FileManagement for Workspace {
     }
 
     fn update_file(&mut self, url: &Url, changes: Vec<TextDocumentContentChangeEvent>) {
-        crate::features::diagnostics::ImportErrors::clear(url);
+        super::features::diagnostics::ImportErrors::clear(url);
         let file_index = *self.url_node_map.get(url).unwrap();
         self.clear_outgoing_edges(&file_index);
 
@@ -236,7 +238,7 @@ impl FileManagement for Workspace {
                     }
                 }
                 Err(range) => {
-                    crate::features::diagnostics::ImportErrors::add_error(
+                    super::features::diagnostics::ImportErrors::add_error(
                         url.clone(),
                         Diagnostic::new_simple(range, String::from("File could not be found.")),
                     );

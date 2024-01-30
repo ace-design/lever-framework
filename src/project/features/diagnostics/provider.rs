@@ -3,10 +3,8 @@ use std::sync::{Arc, Mutex};
 use tower_lsp::lsp_types::{Diagnostic, Url};
 
 use super::parse::Parse;
-use crate::{
-    features::diagnostics::ImportErrors,
-    metadata::{AstQuery, SymbolTableQuery},
-};
+
+use crate::project::{features::diagnostics::ImportErrors, AstQuery, SymbolTableQuery};
 
 macro_rules! diags {
     ($($diag:expr),*) => {

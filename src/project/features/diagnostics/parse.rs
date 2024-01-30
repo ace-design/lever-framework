@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::metadata::{AstQuery, NodeKind, SymbolTableQuery, VisitNode, Visitable};
+use crate::project::{AstQuery, NodeKind, SymbolTableQuery, VisitNode, Visitable};
 use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity, Url};
 
 use super::provider::DiagnosticProvider;

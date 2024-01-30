@@ -9,12 +9,14 @@ use tower_lsp::lsp_types::{
 };
 use tree_sitter::{InputEdit, Parser, Tree};
 
-use crate::features::{completion, diagnostics, semantic_tokens};
-use crate::language_def::{Import, LanguageDefinition};
-use crate::metadata::{
+use super::features::{completion, diagnostics, semantic_tokens};
+use super::metadata::{
     AstEditor, AstManager, AstQuery, SymbolId, SymbolTableEditor, SymbolTableManager, Visitable,
 };
-use crate::{utils, workspace};
+
+use crate::language_def::{Import, LanguageDefinition};
+use crate::project::workspace;
+use crate::utils;
 
 pub struct File {
     pub uri: Url,

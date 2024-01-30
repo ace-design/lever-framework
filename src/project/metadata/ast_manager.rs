@@ -2,7 +2,7 @@ use core::fmt;
 
 use tower_lsp::lsp_types::Range;
 
-use crate::metadata::ast::VisitNode;
+use super::ast::VisitNode;
 
 use super::{Ast, SymbolId};
 

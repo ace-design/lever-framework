@@ -1,15 +1,12 @@
 mod language_server;
 extern crate lazy_static;
 
-mod features;
-mod file;
 mod language_def;
 mod lsp_mappings;
-mod metadata;
 mod plugin_manager;
+mod project;
 mod settings;
 mod utils;
-mod workspace;
 
 #[macro_use]
 extern crate log;

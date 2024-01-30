@@ -7,7 +7,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::metadata::{AstQuery, SymbolTableQuery};
+use crate::project::{AstQuery, SymbolTableQuery};
 use tower_lsp::lsp_types::{Diagnostic, Url};
 
 use super::provider::DiagnosticProvider;

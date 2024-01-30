@@ -6,10 +6,10 @@ use indextree::{Arena, NodeId};
 use serde::Deserialize;
 use tower_lsp::lsp_types::{Position, Range};
 
+use crate::project::metadata::SymbolId;
 use crate::{
     language_def::{self, Import, Symbol},
     lsp_mappings::HighlightType,
-    metadata::SymbolId,
     utils,
 };
 

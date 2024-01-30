@@ -3,7 +3,7 @@ use std::sync::RwLock;
 
 use crate::language_def::{self, LanguageDefinition};
 use crate::plugin_manager::{self, OnState, PluginManager, PluginsResult};
-use crate::workspace::{FileManagement, LanguageActions, Workspace};
+use crate::project::workspace::{FileManagement, LanguageActions, Workspace};
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};

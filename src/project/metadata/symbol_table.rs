@@ -1,8 +1,10 @@
-use crate::{language_def, metadata::NodeKind};
-use std::fmt;
+use super::ast::{Ast, Visitable};
 
-use crate::metadata::ast::{Ast, Visitable};
+use crate::language_def;
+use crate::project::metadata::NodeKind;
+
 use indextree::{Arena, NodeId};
+use std::fmt;
 use tower_lsp::lsp_types::{Position, Range};
 
 use super::{symbol::Usage, Node, Symbol, SymbolId};

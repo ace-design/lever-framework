@@ -98,20 +98,4 @@ pub fn get_list(
     }
 
     default_list(position, st_query)
-    //
-    // match name_field {
-    //     Some(fields) => {
-    //         return Some(
-    //             fields
-    //                 .iter()
-    //                 .map(|item| CompletionItem {
-    //                     label: item.get_name(),
-    //                     kind: Some(CompletionItemKind::FIELD),
-    //                     ..Default::default()
-    //                 })
-    //                 .collect(),
-    //         )
-    //     }
-    //     None => default_list(position, st_query),
-    // }
 }

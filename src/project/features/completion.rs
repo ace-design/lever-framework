@@ -12,21 +12,21 @@ use tower_lsp::lsp_types::{
 fn default_list(
     position: Position,
     query: &Arc<Mutex<impl SymbolTableQuery>>,
-) -> Option<Vec<CompletionItem>> {
+) -> Vec<CompletionItem> {
     let mut items: Vec<CompletionItem> = Vec::new();
 
     for symbol in query.lock().unwrap().get_symbols_at_pos(position) {
         items.push(CompletionItem {
             label: symbol.name.clone(),
-            kind: get_symbol_completion_type(symbol.name),
+            kind: get_symbol_completion_type(&symbol.name),
             ..Default::default()
-        })
+        });
     }
 
-    Some(items)
+    items
 }
 
-fn get_symbol_completion_type(symbol_kind: String) -> Option<CompletionItemKind> {
+fn get_symbol_completion_type(symbol_kind: &str) -> Option<CompletionItemKind> {
     Some(
         LanguageDefinition::get()
             .symbol_types
@@ -53,7 +53,7 @@ pub fn get_imported_list(
                 detail: Some(uri.path_segments().unwrap().last().unwrap().to_string()),
                 description: None,
             }),
-            kind: get_symbol_completion_type(s.kind.clone()),
+            kind: get_symbol_completion_type(&s.kind),
             ..Default::default()
         })
         .collect()
@@ -62,7 +62,7 @@ pub fn get_imported_list(
 pub fn get_list(
     position: Position,
     ast_query: &Arc<Mutex<impl AstQuery>>,
-    st_query: &Arc<Mutex<impl SymbolTableQuery>>,
+    symbol_table_query: &Arc<Mutex<impl SymbolTableQuery>>,
     context: Option<CompletionContext>,
 ) -> Option<Vec<CompletionItem>> {
     if let Some(context) = context {
@@ -77,10 +77,14 @@ pub fn get_list(
             let node = root_visit.get_node_at_position(new_pos)?;
             debug!("{:?}", node.get());
             if let Some(linked_symbol_id) = node.get().linked_symbol.clone() {
-                let st_query = st_query.lock().unwrap();
-                let type_symbol_id = st_query.get_symbol(linked_symbol_id)?.type_symbol.clone()?;
-                if let Some(type_symbol) = st_query.get_symbol(type_symbol_id) {
-                    let symbols = st_query.get_symbols_in_scope(type_symbol.field_scope_id?);
+                let symbol_table_query = symbol_table_query.lock().unwrap();
+                let type_symbol_id = symbol_table_query
+                    .get_symbol(linked_symbol_id)?
+                    .type_symbol
+                    .clone()?;
+                if let Some(type_symbol) = symbol_table_query.get_symbol(type_symbol_id) {
+                    let symbols =
+                        symbol_table_query.get_symbols_in_scope(type_symbol.field_scope_id?);
 
                     return Some(
                         symbols
@@ -97,5 +101,5 @@ pub fn get_list(
         }
     }
 
-    default_list(position, st_query)
+    Some(default_list(position, symbol_table_query))
 }

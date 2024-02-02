@@ -8,7 +8,7 @@ use super::{Ast, Symbol};
 use indextree::NodeId;
 use tower_lsp::lsp_types::{Position, Range};
 
-use super::symbol_table::SymbolTableActions;
+use super::symbol_table::Actions;
 
 pub trait SymbolTableEditor {
     fn update(&mut self, ast: &mut Ast);
@@ -82,6 +82,6 @@ impl SymbolTableQuery for SymbolTableManager {
 
 impl SymbolTableEditor for SymbolTableManager {
     fn update(&mut self, ast: &mut Ast) {
-        *self = SymbolTableManager::new(ast)
+        *self = SymbolTableManager::new(ast);
     }
 }

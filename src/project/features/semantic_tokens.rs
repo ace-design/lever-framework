@@ -20,13 +20,13 @@ pub struct ColorData {
 
 pub fn get_tokens(
     ast_query: &Arc<Mutex<impl AstQuery>>,
-    st_query: &Arc<Mutex<impl SymbolTableQuery>>,
+    symbol_table_query: &Arc<Mutex<impl SymbolTableQuery>>,
     ts_tree: &tree_sitter::Tree,
     source_code: &str,
 ) -> SemanticTokensResult {
     //Getting ast data
     let mut array = get_keyword_color_data(&ts_tree.root_node(), source_code);
-    array.append(&mut get_symbols_color_data(st_query));
+    array.append(&mut get_symbols_color_data(symbol_table_query));
     array.append(&mut get_ast_color_data(ast_query));
     //sort line
 
@@ -135,7 +135,7 @@ pub fn get_symbols_color_data(st_query: &Arc<Mutex<impl SymbolTableQuery>>) -> V
 
     let mut color_data = vec![];
     for symbol in symbols {
-        let highlight_type = get_symbol_highlight_type(symbol.kind);
+        let highlight_type = get_symbol_highlight_type(&symbol.kind);
         let node_type = *semantic_token_types_map
             .get(highlight_type.get().as_str())
             .unwrap() as u32;
@@ -162,7 +162,7 @@ pub fn get_symbols_color_data(st_query: &Arc<Mutex<impl SymbolTableQuery>>) -> V
     color_data
 }
 
-fn get_symbol_highlight_type(symbol_kind: String) -> HighlightType {
+fn get_symbol_highlight_type(symbol_kind: &str) -> HighlightType {
     LanguageDefinition::get()
         .symbol_types
         .iter()

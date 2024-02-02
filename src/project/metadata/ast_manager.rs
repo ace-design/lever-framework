@@ -22,7 +22,7 @@ pub struct AstManager {
 
 impl AstManager {
     pub fn new(source_code: &str, tree: tree_sitter::Tree) -> AstManager {
-        let ast = Ast::new(source_code, tree).unwrap();
+        let ast = Ast::new(source_code, tree);
         AstManager { ast }
     }
 

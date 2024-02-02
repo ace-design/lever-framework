@@ -61,7 +61,7 @@ impl LanguageServer for Backend {
             self.workspace
                 .write()
                 .unwrap()
-                .set_root_path(root_uri.to_file_path().ok())
+                .set_root_path(root_uri.to_file_path().ok());
         }
 
         info!(
@@ -147,7 +147,7 @@ impl LanguageServer for Backend {
 
         diagnostics.append(&mut plugin_result.diagnostic);
 
-        self.publish_diagnostics(doc.uri, diagnostics)
+        self.publish_diagnostics(doc.uri, diagnostics);
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -158,7 +158,7 @@ impl LanguageServer for Backend {
             workspace.get_quick_diagnostics(&params.text_document.uri)
         };
 
-        self.publish_diagnostics(params.text_document.uri, diagnostics)
+        self.publish_diagnostics(params.text_document.uri, diagnostics);
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
@@ -176,13 +176,13 @@ impl LanguageServer for Backend {
 
         diagnostics.append(&mut plugin_result.diagnostic);
 
-        for plugin_notification in plugin_result.notification.into_iter() {
+        for plugin_notification in plugin_result.notification {
             self.client
                 .send_notification::<plugin_manager::CustomNotification>(plugin_notification)
                 .await;
         }
 
-        self.publish_diagnostics(params.text_document.uri, diagnostics)
+        self.publish_diagnostics(params.text_document.uri, diagnostics);
     }
 
     async fn goto_definition(
@@ -197,11 +197,9 @@ impl LanguageServer for Backend {
             workspace.get_definition_location(&uri, params.text_document_position_params.position)
         };
 
-        if let Some(location) = maybe_location {
+        maybe_location.map_or(Ok(None), |location| {
             Ok(Some(GotoDefinitionResponse::Scalar(location)))
-        } else {
-            Ok(None)
-        }
+        })
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
@@ -214,14 +212,12 @@ impl LanguageServer for Backend {
             )
         };
 
-        if let Some(hover_info) = maybe_hover_info {
+        maybe_hover_info.map_or(Ok(None), |hover_info| {
             Ok(Some(Hover {
                 contents: hover_info,
                 range: None,
             }))
-        } else {
-            Ok(None)
-        }
+        })
     }
 
     async fn semantic_tokens_full(

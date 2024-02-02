@@ -31,38 +31,38 @@ pub enum SymbolCompletionType {
 }
 
 impl SymbolCompletionType {
-    pub fn get(&self) -> CompletionItemKind {
+    pub const fn get(&self) -> CompletionItemKind {
         match self {
-            SymbolCompletionType::Text => CompletionItemKind::TEXT,
-            SymbolCompletionType::Method => CompletionItemKind::METHOD,
-            SymbolCompletionType::Function => CompletionItemKind::FUNCTION,
-            SymbolCompletionType::Constructor => CompletionItemKind::CONSTRUCTOR,
-            SymbolCompletionType::Field => CompletionItemKind::FIELD,
-            SymbolCompletionType::Variable => CompletionItemKind::VARIABLE,
-            SymbolCompletionType::Class => CompletionItemKind::CLASS,
-            SymbolCompletionType::Interface => CompletionItemKind::INTERFACE,
-            SymbolCompletionType::Module => CompletionItemKind::MODULE,
-            SymbolCompletionType::Property => CompletionItemKind::PROPERTY,
-            SymbolCompletionType::Unit => CompletionItemKind::UNIT,
-            SymbolCompletionType::Value => CompletionItemKind::VALUE,
-            SymbolCompletionType::Enum => CompletionItemKind::ENUM,
-            SymbolCompletionType::Keyword => CompletionItemKind::KEYWORD,
-            SymbolCompletionType::Snippet => CompletionItemKind::SNIPPET,
-            SymbolCompletionType::Color => CompletionItemKind::COLOR,
-            SymbolCompletionType::File => CompletionItemKind::FILE,
-            SymbolCompletionType::Reference => CompletionItemKind::REFERENCE,
-            SymbolCompletionType::Folder => CompletionItemKind::FOLDER,
-            SymbolCompletionType::EnumMember => CompletionItemKind::ENUM_MEMBER,
-            SymbolCompletionType::Constant => CompletionItemKind::CONSTANT,
-            SymbolCompletionType::Struct => CompletionItemKind::STRUCT,
-            SymbolCompletionType::Event => CompletionItemKind::EVENT,
-            SymbolCompletionType::Operator => CompletionItemKind::OPERATOR,
-            SymbolCompletionType::TypeParameter => CompletionItemKind::TYPE_PARAMETER,
+            Self::Text => CompletionItemKind::TEXT,
+            Self::Method => CompletionItemKind::METHOD,
+            Self::Function => CompletionItemKind::FUNCTION,
+            Self::Constructor => CompletionItemKind::CONSTRUCTOR,
+            Self::Field => CompletionItemKind::FIELD,
+            Self::Variable => CompletionItemKind::VARIABLE,
+            Self::Class => CompletionItemKind::CLASS,
+            Self::Interface => CompletionItemKind::INTERFACE,
+            Self::Module => CompletionItemKind::MODULE,
+            Self::Property => CompletionItemKind::PROPERTY,
+            Self::Unit => CompletionItemKind::UNIT,
+            Self::Value => CompletionItemKind::VALUE,
+            Self::Enum => CompletionItemKind::ENUM,
+            Self::Keyword => CompletionItemKind::KEYWORD,
+            Self::Snippet => CompletionItemKind::SNIPPET,
+            Self::Color => CompletionItemKind::COLOR,
+            Self::File => CompletionItemKind::FILE,
+            Self::Reference => CompletionItemKind::REFERENCE,
+            Self::Folder => CompletionItemKind::FOLDER,
+            Self::EnumMember => CompletionItemKind::ENUM_MEMBER,
+            Self::Constant => CompletionItemKind::CONSTANT,
+            Self::Struct => CompletionItemKind::STRUCT,
+            Self::Event => CompletionItemKind::EVENT,
+            Self::Operator => CompletionItemKind::OPERATOR,
+            Self::TypeParameter => CompletionItemKind::TYPE_PARAMETER,
         }
     }
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub enum HighlightType {
     Namespace,
     Type,
@@ -90,31 +90,31 @@ pub enum HighlightType {
 }
 
 impl HighlightType {
-    pub fn get(&self) -> lsp_types::SemanticTokenType {
+    pub const fn get(&self) -> lsp_types::SemanticTokenType {
         match self {
-            HighlightType::Namespace => lsp_types::SemanticTokenType::NAMESPACE,
-            HighlightType::Type => lsp_types::SemanticTokenType::TYPE,
-            HighlightType::Class => lsp_types::SemanticTokenType::CLASS,
-            HighlightType::Enum => lsp_types::SemanticTokenType::ENUM,
-            HighlightType::Interface => lsp_types::SemanticTokenType::INTERFACE,
-            HighlightType::Struct => lsp_types::SemanticTokenType::STRUCT,
-            HighlightType::TypeParameter => lsp_types::SemanticTokenType::TYPE_PARAMETER,
-            HighlightType::Parameter => lsp_types::SemanticTokenType::PARAMETER,
-            HighlightType::Variable => lsp_types::SemanticTokenType::VARIABLE,
-            HighlightType::Property => lsp_types::SemanticTokenType::PROPERTY,
-            HighlightType::EnumMember => lsp_types::SemanticTokenType::ENUM_MEMBER,
-            HighlightType::Event => lsp_types::SemanticTokenType::EVENT,
-            HighlightType::Function => lsp_types::SemanticTokenType::FUNCTION,
-            HighlightType::Method => lsp_types::SemanticTokenType::METHOD,
-            HighlightType::Macro => lsp_types::SemanticTokenType::MACRO,
-            HighlightType::Keyword => lsp_types::SemanticTokenType::KEYWORD,
-            HighlightType::Modifier => lsp_types::SemanticTokenType::MODIFIER,
-            HighlightType::Comment => lsp_types::SemanticTokenType::COMMENT,
-            HighlightType::String => lsp_types::SemanticTokenType::STRING,
-            HighlightType::Number => lsp_types::SemanticTokenType::NUMBER,
-            HighlightType::Regexp => lsp_types::SemanticTokenType::REGEXP,
-            HighlightType::Operator => lsp_types::SemanticTokenType::OPERATOR,
-            HighlightType::Decorator => lsp_types::SemanticTokenType::DECORATOR,
+            Self::Namespace => lsp_types::SemanticTokenType::NAMESPACE,
+            Self::Type => lsp_types::SemanticTokenType::TYPE,
+            Self::Class => lsp_types::SemanticTokenType::CLASS,
+            Self::Enum => lsp_types::SemanticTokenType::ENUM,
+            Self::Interface => lsp_types::SemanticTokenType::INTERFACE,
+            Self::Struct => lsp_types::SemanticTokenType::STRUCT,
+            Self::TypeParameter => lsp_types::SemanticTokenType::TYPE_PARAMETER,
+            Self::Parameter => lsp_types::SemanticTokenType::PARAMETER,
+            Self::Variable => lsp_types::SemanticTokenType::VARIABLE,
+            Self::Property => lsp_types::SemanticTokenType::PROPERTY,
+            Self::EnumMember => lsp_types::SemanticTokenType::ENUM_MEMBER,
+            Self::Event => lsp_types::SemanticTokenType::EVENT,
+            Self::Function => lsp_types::SemanticTokenType::FUNCTION,
+            Self::Method => lsp_types::SemanticTokenType::METHOD,
+            Self::Macro => lsp_types::SemanticTokenType::MACRO,
+            Self::Keyword => lsp_types::SemanticTokenType::KEYWORD,
+            Self::Modifier => lsp_types::SemanticTokenType::MODIFIER,
+            Self::Comment => lsp_types::SemanticTokenType::COMMENT,
+            Self::String => lsp_types::SemanticTokenType::STRING,
+            Self::Number => lsp_types::SemanticTokenType::NUMBER,
+            Self::Regexp => lsp_types::SemanticTokenType::REGEXP,
+            Self::Operator => lsp_types::SemanticTokenType::OPERATOR,
+            Self::Decorator => lsp_types::SemanticTokenType::DECORATOR,
         }
     }
 }

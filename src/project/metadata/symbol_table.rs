@@ -18,7 +18,7 @@ pub struct SymbolTable {
     undefined_list: Vec<(String, Range)>,
 }
 
-pub trait SymbolTableActions {
+pub trait Actions {
     fn get_symbol(&self, id: SymbolId) -> Option<&Symbol>;
     fn get_symbol_mut(&mut self, id: SymbolId) -> Option<&mut Symbol>;
     fn get_all_symbols(&self) -> Vec<Symbol>;
@@ -31,7 +31,7 @@ pub trait SymbolTableActions {
     fn get_unlinked_symbols(&self) -> Vec<(String, Range)>;
 }
 
-impl SymbolTableActions for SymbolTable {
+impl Actions for SymbolTable {
     fn get_symbol(&self, id: SymbolId) -> Option<&Symbol> {
         // Assumes file id is correct
         let scope_table = self.arena.get(id.symbol_table_id)?.get();
@@ -158,12 +158,10 @@ impl SymbolTable {
                 if let Some(scope_id) = self._get_scope_id(position, child_scope_id) {
                     if scope_id.to_string() == self.root_id?.to_string() {
                         return Some(child_scope_id);
-                    } else {
-                        return Some(scope_id);
                     }
-                } else {
-                    return Some(child_scope_id);
+                    return Some(scope_id);
                 }
+                return Some(child_scope_id);
             }
         }
         self.root_id
@@ -472,7 +470,7 @@ impl fmt::Display for ScopeSymbolTable {
         output.push_str("-".repeat(62).as_str());
         output.push('\n');
 
-        for s in self.symbols.iter() {
+        for s in &self.symbols {
             output.push_str(&s.to_string());
         }
 

@@ -42,7 +42,7 @@ pub enum DirectOrRule {
     Rule(String),
 }
 
-#[derive(Debug, PartialEq, Deserialize, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone, Default)]
 pub enum Symbol {
     Init {
         #[serde(rename(deserialize = "type"))]
@@ -60,7 +60,7 @@ pub enum Symbol {
     None,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone, Default)]
 pub enum Import {
     Local,
     Library,
@@ -113,8 +113,8 @@ impl LanguageDefinition {
         INSTANCE
             .set(
                 ron::de::from_str(&language_def_modified).unwrap_or_else(|e| {
-                    error!("Failed to parse rules: {}", e);
-                    panic!("Failed to parse rules: {}", e);
+                    error!("Failed to parse rules: {e}");
+                    panic!("Failed to parse rules: {e}");
                 }),
             )
             .unwrap();

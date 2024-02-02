@@ -76,8 +76,8 @@ impl Workspace {
         info!("Settings: {:?}", self.settings);
     }
 
-    fn add_file(&mut self, url: Url, content: &str) -> Option<NodeIndex> {
-        if self.url_node_map.contains_key(&url) {
+    fn add_file(&mut self, url: &Url, content: &str) -> Option<NodeIndex> {
+        if self.url_node_map.contains_key(url) {
             return None;
         }
 
@@ -102,7 +102,7 @@ impl Workspace {
                         Some(*imported_file_index)
                     } else {
                         let content = fs::read_to_string(path).unwrap();
-                        let imported_file_index = self.add_file(imported_file_url, &content);
+                        let imported_file_index = self.add_file(&imported_file_url, &content);
                         if let Some(i) = imported_file_index {
                             self.file_graph.add_edge(new_file_index, i, import_type);
                             Some(i)
@@ -112,7 +112,7 @@ impl Workspace {
                     };
 
                     if let Some(imported_file_index) = maybe_imported_file_index {
-                        self.link_imported_symbols(&new_file_index, &imported_file_index)
+                        self.link_imported_symbols(new_file_index, imported_file_index);
                     }
                 }
                 Err(range) => {
@@ -131,15 +131,15 @@ impl Workspace {
         Some(new_file_index)
     }
 
-    fn link_imported_symbols(&mut self, file_index: &NodeIndex, imported_file_index: &NodeIndex) {
-        let imported_file = self.file_graph.node_weight(*imported_file_index).unwrap();
+    fn link_imported_symbols(&mut self, file_index: NodeIndex, imported_file_index: NodeIndex) {
+        let imported_file = self.file_graph.node_weight(imported_file_index).unwrap();
         let (imported_symbols, scope_id) = imported_file
             .symbol_table_manager
             .lock()
             .unwrap()
             .get_symbols_at_root();
 
-        let file = self.file_graph.node_weight(*file_index).unwrap();
+        let file = self.file_graph.node_weight(file_index).unwrap();
         let unlinked_symbols: HashMap<String, Range> = file
             .symbol_table_manager
             .lock()
@@ -150,7 +150,7 @@ impl Workspace {
 
         for (i, s) in imported_symbols.into_iter().enumerate() {
             if let Some(range) = unlinked_symbols.get(&s.name) {
-                let symbol_id = SymbolId::new(Some(*imported_file_index), scope_id, i);
+                let symbol_id = SymbolId::new(Some(imported_file_index), scope_id, i);
 
                 file.ast_manager
                     .lock()
@@ -158,15 +158,15 @@ impl Workspace {
                     .link_symbol(symbol_id.clone(), *range);
                 let mut imported_st = imported_file.symbol_table_manager.lock().unwrap();
                 let symbol = imported_st.get_symbol_mut(symbol_id).unwrap();
-                symbol.add_usage(Usage::new_external(*file_index, *range));
+                symbol.add_usage(Usage::new_external(file_index, *range));
             }
         }
     }
 
-    fn clear_outgoing_edges(&mut self, file_index: &NodeIndex) {
+    fn clear_outgoing_edges(&mut self, file_index: NodeIndex) {
         let outgoing_edges: Vec<_> = self
             .file_graph
-            .edges_directed(*file_index, EdgeDirection::Outgoing)
+            .edges_directed(file_index, EdgeDirection::Outgoing)
             .map(|edge| edge.id())
             .collect();
 
@@ -175,10 +175,10 @@ impl Workspace {
         }
     }
 
-    fn is_local_import(&self, file_index: &NodeIndex, imported_file_index: &NodeIndex) -> bool {
+    fn is_local_import(&self, file_index: NodeIndex, imported_file_index: NodeIndex) -> bool {
         let edge_index = self
             .file_graph
-            .find_edge(*file_index, *imported_file_index)
+            .find_edge(file_index, imported_file_index)
             .unwrap();
 
         let import_type = self.file_graph.edge_weight(edge_index).unwrap();
@@ -199,13 +199,13 @@ impl FileManagement for Workspace {
     }
 
     fn add_file(&mut self, url: Url, content: &str) {
-        self.add_file(url, content);
+        self.add_file(&url, content);
     }
 
     fn update_file(&mut self, url: &Url, changes: Vec<TextDocumentContentChangeEvent>) {
         super::features::diagnostics::ImportErrors::clear(url);
         let file_index = *self.url_node_map.get(url).unwrap();
-        self.clear_outgoing_edges(&file_index);
+        self.clear_outgoing_edges(file_index);
 
         let file = self.get_file_mut(url).unwrap();
 
@@ -224,7 +224,7 @@ impl FileManagement for Workspace {
                         Some(*imported_file_index)
                     } else {
                         let content = fs::read_to_string(path).unwrap();
-                        let imported_file_index = self.add_file(imported_file_url, &content);
+                        let imported_file_index = self.add_file(&imported_file_url, &content);
                         if let Some(i) = imported_file_index {
                             self.file_graph.add_edge(file_index, i, import_type);
                             Some(i)
@@ -234,7 +234,7 @@ impl FileManagement for Workspace {
                     };
 
                     if let Some(imported_file_index) = maybe_imported_file_index {
-                        self.link_imported_symbols(&file_index, &imported_file_index)
+                        self.link_imported_symbols(file_index, imported_file_index);
                     }
                 }
                 Err(range) => {
@@ -308,7 +308,7 @@ impl LanguageActions for Workspace {
 
         let mut changes: HashMap<Url, Vec<TextEdit>> = HashMap::new();
         let symbol = if let Some(file_id) = symbol_id.file_id {
-            if !self.is_local_import(self.url_node_map.get(url)?, &file_id) {
+            if !self.is_local_import(*self.url_node_map.get(url)?, file_id) {
                 // You should not edit files that are not local to the project
                 return None;
             }

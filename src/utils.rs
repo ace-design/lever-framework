@@ -3,21 +3,21 @@ use std::path::PathBuf;
 use tower_lsp::lsp_types::Position;
 use tree_sitter::Point;
 
-pub fn pos_to_point(pos: Position) -> Point {
+pub const fn pos_to_point(pos: Position) -> Point {
     Point {
         row: pos.line as usize,
         column: pos.character as usize,
     }
 }
 
-pub fn point_to_pos(point: Point) -> Position {
+pub const fn point_to_pos(point: Point) -> Position {
     Position {
         line: point.row as u32,
         character: point.column as u32,
     }
 }
 
-pub fn ts_range_to_lsp_range(range: tree_sitter::Range) -> tower_lsp::lsp_types::Range {
+pub const fn ts_range_to_lsp_range(range: tree_sitter::Range) -> tower_lsp::lsp_types::Range {
     tower_lsp::lsp_types::Range {
         start: point_to_pos(range.start_point),
         end: point_to_pos(range.end_point),

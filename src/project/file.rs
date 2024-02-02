@@ -99,13 +99,13 @@ impl File {
         }
 
         let mut ast_manager = self.ast_manager.lock().unwrap();
-        let mut st_manager = self.symbol_table_manager.lock().unwrap();
+        let mut symbol_table_manager = self.symbol_table_manager.lock().unwrap();
 
-        ast_manager.update(&self.source_code, self.tree.to_owned());
-        st_manager.update(ast_manager.get_ast());
+        ast_manager.update(&self.source_code, self.tree.clone());
+        symbol_table_manager.update(ast_manager.get_ast());
 
         debug!("\nAST:\n{}", ast_manager);
-        debug!("\nSymbol Table:\n{}", st_manager);
+        debug!("\nSymbol Table:\n{}", symbol_table_manager);
     }
 
     pub fn get_import_paths(&self) -> Vec<Result<(workspace::Import, PathBuf), lsp_types::Range>> {
@@ -121,7 +121,7 @@ impl File {
                     let mut curr_path = self.uri.to_file_path().unwrap();
                     curr_path.pop(); // Get dir
 
-                    curr_path.push(file_name.clone());
+                    curr_path.push(file_name);
 
                     if curr_path.exists() {
                         Some(Ok((workspace::Import::Local, curr_path)))
@@ -171,11 +171,11 @@ impl File {
     }
 
     pub fn get_quick_diagnostics(&self) -> Vec<Diagnostic> {
-        diagnostics::get_quick_diagnostics(&self.uri, &self.ast_manager, &self.symbol_table_manager)
+        diagnostics::get_quick(&self.uri, &self.ast_manager, &self.symbol_table_manager)
     }
 
     pub fn get_full_diagnostics(&self) -> Vec<Diagnostic> {
-        diagnostics::get_full_diagnostics(&self.uri, &self.ast_manager, &self.symbol_table_manager)
+        diagnostics::get_full(&self.uri, &self.ast_manager, &self.symbol_table_manager)
     }
 
     pub fn get_completion_list(

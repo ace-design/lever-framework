@@ -18,7 +18,7 @@ impl DiagnosticProvider for Parse {
         let mut errors: Vec<(VisitNode, Option<String>)> = vec![];
         for node in root.get_descendants() {
             if let NodeKind::Error(msg) = &node.get().kind {
-                errors.push((node, msg.clone()))
+                errors.push((node, msg.clone()));
             };
         }
 
@@ -32,11 +32,10 @@ impl DiagnosticProvider for Parse {
                         "parsing".to_string(),
                     )),
                     Some("AST".to_string()),
-                    if let Some(msg) = msg {
-                        format!("Syntax error: {}", msg)
-                    } else {
-                        "Syntax error.".to_string()
-                    },
+                    msg.map_or_else(
+                        || "Syntax error.".to_string(),
+                        |msg| format!("Syntax error: {msg}"),
+                    ),
                     None,
                     None,
                 )

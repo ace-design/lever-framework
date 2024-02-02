@@ -28,7 +28,7 @@ pub trait DiagnosticProvider {
     ) -> Vec<Diagnostic>;
 }
 
-pub fn get_quick_diagnostics(
+pub fn get_quick(
     uri: &Url,
     ast_query: &Arc<Mutex<impl AstQuery>>,
     symbol_table_query: &Arc<Mutex<impl SymbolTableQuery>>,
@@ -39,7 +39,7 @@ pub fn get_quick_diagnostics(
     ]
 }
 
-pub fn get_full_diagnostics(
+pub fn get_full(
     uri: &Url,
     ast_query: &Arc<Mutex<impl AstQuery>>,
     symbol_table_query: &Arc<Mutex<impl SymbolTableQuery>>,

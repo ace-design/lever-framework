@@ -15,7 +15,7 @@ use crate::{
 
 use super::rules_translator::RulesTranslator;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Operator {
     Add,
     Subtract,
@@ -25,7 +25,7 @@ pub enum Operator {
     //...
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub enum TypeDecType {
     TypeDef,
     HeaderType,
@@ -37,14 +37,14 @@ pub enum TypeDecType {
     Package,
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub enum Direction {
     In,
     Out,
     InOut,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
 pub enum NodeKind {
     Node(String),
     Error(Option<String>),
@@ -109,7 +109,7 @@ pub struct VisitNode<'a> {
 }
 
 impl<'a> VisitNode<'a> {
-    pub fn new(arena: &'a Arena<Node>, node_id: NodeId) -> VisitNode<'a> {
+    pub const fn new(arena: &'a Arena<Node>, node_id: NodeId) -> VisitNode<'a> {
         VisitNode { arena, id: node_id }
     }
 }
@@ -187,15 +187,12 @@ impl fmt::Display for Ast {
 }
 
 impl Ast {
-    pub fn initialize(arena: Arena<Node>, root_id: NodeId) -> Ast {
+    pub const fn initialize(arena: Arena<Node>, root_id: NodeId) -> Ast {
         Ast { arena, root_id }
     }
 
-    pub fn new(source_code: &str, syntax_tree: tree_sitter::Tree) -> Option<Ast> {
-        Some(RulesTranslator::translate(
-            source_code.to_string(),
-            syntax_tree,
-        ))
+    pub fn new(source_code: &str, syntax_tree: tree_sitter::Tree) -> Ast {
+        RulesTranslator::translate(source_code.to_string(), syntax_tree)
     }
 
     pub fn link_symbol(&mut self, symbol_id: SymbolId, range: Range) {
@@ -221,7 +218,7 @@ impl Ast {
         }
     }
 
-    pub fn visit_root(&self) -> VisitNode {
+    pub const fn visit_root(&self) -> VisitNode {
         VisitNode::new(&self.arena, self.root_id)
     }
 
@@ -244,12 +241,12 @@ impl Ast {
             match node.kind.clone() {
                 NodeKind::Node(name) =>
                     if node.linked_symbol.is_some() {
-                        format!("{}*", name)
+                        format!("{name}*")
                     } else {
                         name
                     },
                 NodeKind::Error(msg) =>
-                    format!("Error: {}", msg.unwrap_or(String::from("Unknown"))),
+                    format!("Error: {}", msg.unwrap_or_else(|| String::from("Unknown"))),
             }
         );
 
@@ -276,7 +273,7 @@ impl Ast {
             self._get_debug_tree(
                 child,
                 &indent,
-                i == node_id.children(&self.arena).collect::<Vec<_>>().len() - 1,
+                i == node_id.children(&self.arena).count() - 1,
                 result,
             );
         }

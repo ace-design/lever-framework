@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::cast_possible_truncation, clippy::wildcard_imports)]
 mod language_def;
 mod language_server;
 mod lsp_mappings;

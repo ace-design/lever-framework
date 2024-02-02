@@ -11,7 +11,7 @@ pub struct SymbolId {
 }
 
 impl SymbolId {
-    pub fn new(
+    pub const fn new(
         file_id: Option<petgraph::prelude::NodeIndex>, // file_id only present if symbol is defined in a different file
         symbol_table_id: ScopeId,
         index: usize,
@@ -23,7 +23,7 @@ impl SymbolId {
         }
     }
 
-    pub fn get_file_id(&self) -> Option<petgraph::prelude::NodeIndex> {
+    pub const fn get_file_id(&self) -> Option<petgraph::prelude::NodeIndex> {
         self.file_id
     }
 }
@@ -35,14 +35,14 @@ pub struct Usage {
 }
 
 impl Usage {
-    pub fn new_external(file_id: NodeIndex, range: Range) -> Usage {
+    pub const fn new_external(file_id: NodeIndex, range: Range) -> Usage {
         Usage {
             file_id: Some(file_id),
             range,
         }
     }
 
-    pub fn new_local(range: Range) -> Usage {
+    pub const fn new_local(range: Range) -> Usage {
         Usage {
             file_id: None,
             range,
@@ -61,7 +61,7 @@ pub struct Symbol {
 }
 
 impl Symbol {
-    pub fn new(name: String, kind: String, def_position: Range) -> Symbol {
+    pub const fn new(name: String, kind: String, def_position: Range) -> Symbol {
         Symbol {
             name,
             kind,

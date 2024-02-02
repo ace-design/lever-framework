@@ -56,7 +56,7 @@ impl RulesTranslator {
             current_node_id.append(self.new_error_node(error_ts_node, None), &mut self.arena);
         }
 
-        for child in current_rule.children.iter() {
+        for child in &current_rule.children {
             self.query_parse_child(&children, child, current_node_id);
         }
 
@@ -113,8 +113,6 @@ impl RulesTranslator {
 
                     if let Some((_, node)) = found {
                         current_ts_node = node;
-                    } else {
-                        continue;
                     }
                 }
                 current_ts_node

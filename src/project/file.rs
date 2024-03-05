@@ -32,7 +32,7 @@ impl Debug for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("File")
             .field("name", &self.uri.path_segments().unwrap().last().unwrap())
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 

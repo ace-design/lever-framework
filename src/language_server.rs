@@ -143,7 +143,7 @@ impl LanguageServer for Backend {
             .plugin_manager
             .write()
             .unwrap()
-            .run_plugins(&doc.uri, OnState::Save);
+            .run_plugins(&doc.uri, &OnState::Save);
 
         diagnostics.append(&mut plugin_result.diagnostic);
 
@@ -172,7 +172,7 @@ impl LanguageServer for Backend {
             .plugin_manager
             .write()
             .unwrap()
-            .run_plugins(&params.text_document.uri, OnState::Save);
+            .run_plugins(&params.text_document.uri, &OnState::Save);
 
         diagnostics.append(&mut plugin_result.diagnostic);
 

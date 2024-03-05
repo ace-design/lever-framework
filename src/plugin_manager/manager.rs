@@ -67,7 +67,7 @@ impl PluginManager {
         if let Ok(mut plugins) = from_str::<Vec<Plugin>>(json_str) {
             if let Some(url) = uri {
                 let key = String::from("workspace");
-                for plugin in plugins.iter_mut() {
+                for plugin in &mut plugins {
                     plugin.arguments.push(Argument {
                         key: key.clone(),
                         value: url
@@ -76,7 +76,7 @@ impl PluginManager {
                             .into_os_string()
                             .into_string()
                             .unwrap(),
-                    })
+                    });
                 }
             }
 
@@ -84,9 +84,9 @@ impl PluginManager {
         }
     }
 
-    pub fn run_plugins(&mut self, file: &Url, state: OnState) -> PluginsResult {
+    pub fn run_plugins(&mut self, file: &Url, state: &OnState) -> PluginsResult {
         let mut plugins_result: PluginsResult = PluginsResult::new();
-        for plugin in self.plugins.clone().iter_mut() {
+        for plugin in &mut self.plugins.clone() {
             let key = String::from("file");
             plugin.arguments.push(Argument {
                 key: key.clone(),
@@ -97,8 +97,8 @@ impl PluginManager {
                     .into_string()
                     .unwrap(),
             });
-            if plugin.on.contains(&state) {
-                let json_str = self.execute(plugin.clone()).unwrap();
+            if plugin.on.contains(state) {
+                let json_str = PluginManager::execute(plugin.clone());
                 let results: CustomResult = from_str(json_str.as_str()).unwrap();
 
                 match results.output_type {
@@ -117,7 +117,7 @@ impl PluginManager {
         plugins_result
     }
 
-    fn execute(&mut self, plugin: Plugin) -> Option<String> {
+    fn execute(plugin: Plugin) -> String {
         // Replace "your_program" with the actual binary you want to execute
         let mut child = Command::new(plugin.path.clone())
             .stdin(Stdio::piped())
@@ -133,10 +133,9 @@ impl PluginManager {
         }
 
         // Wait for the child process to finish and capture its stdout
-        let result = match child.wait_with_output() {
+        match child.wait_with_output() {
             Ok(output) => String::from_utf8(output.stdout).unwrap(),
             Err(e) => e.to_string(),
-        };
-        Some(result)
+        }
     }
 }

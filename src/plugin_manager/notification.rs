@@ -10,7 +10,7 @@ pub struct CustomParams {
 }
 
 #[derive(Debug)]
-pub enum CustomNotification {}
+pub struct CustomNotification {}
 
 impl Notification for CustomNotification {
     type Params = CustomParams;

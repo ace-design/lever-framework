@@ -258,6 +258,7 @@ impl LanguageActions for Workspace {
         let root_visit = ast_query.visit_root();
         let node = root_visit.get_node_at_position(symbol_position)?;
 
+        debug!("Goto def of: {:?}", node.get());
         let symbol_id = node.get().linked_symbol.clone()?;
 
         Some(if let Some(file_index) = symbol_id.get_file_id() {

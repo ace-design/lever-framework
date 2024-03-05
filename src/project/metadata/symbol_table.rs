@@ -180,9 +180,15 @@ impl SymbolTable {
                 type_node: _,
             } = &ast_arena.get(node_id).unwrap().get().symbol
             {
+                debug!(
+                    "{:?} {}",
+                    ast_arena.get(node_id).unwrap().get().kind,
+                    node_id.children(ast_arena).count()
+                );
                 let name_node_id = node_id
                     .children(ast_arena)
                     .find(|id| {
+                        debug!("{:?} {}", ast_arena.get(*id).unwrap().get().kind, name_node);
                         ast_arena.get(*id).unwrap().get().kind == NodeKind::Node(name_node.clone())
                     })
                     .unwrap();

@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 lever_core = { path = "../lever_core" }
+proc-macro2 = "1.0.79"
 
 quote = "1.0.35"
 ron = "0.8.1"

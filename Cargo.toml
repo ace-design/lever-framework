@@ -8,3 +8,8 @@ members = [
     "crates/lever_core", 
     "crates/lever_gen",
 ]
+
+[dependencies]
+lever_core = { path = "crates/lever_core" }
+lever_gen = { path = "crates/lever_gen" }
+

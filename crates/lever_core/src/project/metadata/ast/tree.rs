@@ -171,7 +171,7 @@ impl Visitable for VisitNode<'_> {
 }
 
 pub trait Translator {
-    fn translate(source_code: String, syntax_tree: tree_sitter::Tree) -> Ast;
+    fn translate(&mut self, source_code: &str, syntax_tree: tree_sitter::Tree) -> Ast;
 }
 
 #[derive(Debug, Clone)]
@@ -192,7 +192,8 @@ impl Ast {
     }
 
     pub fn new(source_code: &str, syntax_tree: tree_sitter::Tree) -> Ast {
-        RulesTranslator::translate(source_code.to_string(), syntax_tree)
+        let translator: &mut dyn Translator = &mut RulesTranslator::new();
+        translator.translate(source_code, syntax_tree)
     }
 
     pub fn link_symbol(&mut self, symbol_id: SymbolId, range: Range) {

@@ -10,41 +10,42 @@ use crate::{
 
 pub struct RulesTranslator {
     arena: Arena<Node>,
-    source_code: String,
-    tree: tree_sitter::Tree,
     language_def: &'static LanguageDefinition,
 }
 
 impl Translator for RulesTranslator {
-    fn translate(source_code: String, syntax_tree: tree_sitter::Tree) -> Ast {
-        let mut translator = RulesTranslator::new(source_code, syntax_tree);
-        let root_id = translator.build();
+    fn translate(&mut self, source_code: &str, syntax_tree: tree_sitter::Tree) -> Ast {
+        let root_id = self.build(source_code, syntax_tree);
 
-        Ast::initialize(translator.arena, root_id)
+        Ast::initialize(self.arena.clone(), root_id)
     }
 }
 
 impl RulesTranslator {
-    fn new(source_code: String, syntax_tree: tree_sitter::Tree) -> RulesTranslator {
+    pub fn new() -> RulesTranslator {
         RulesTranslator {
-            source_code,
             arena: Arena::new(),
-            tree: syntax_tree,
             language_def: LanguageDefinition::get(),
         }
     }
 
-    fn build(&mut self) -> NodeId {
+    fn build(&mut self, source_code: &str, syntax_tree: tree_sitter::Tree) -> NodeId {
         let root_rule = self.language_def.rule_with_name("Root").unwrap();
 
-        self.parse(&root_rule.clone(), &self.tree.clone().root_node())
+        self.parse(&root_rule.clone(), source_code, &syntax_tree.root_node())
     }
 
-    fn parse(&mut self, current_rule: &Rule, current_ts_node: &tree_sitter::Node) -> NodeId {
+    fn parse(
+        &mut self,
+        current_rule: &Rule,
+        source_code: &str,
+        current_ts_node: &tree_sitter::Node,
+    ) -> NodeId {
         let mut cursor = current_ts_node.walk();
         let children: Vec<tree_sitter::Node> = current_ts_node.children(&mut cursor).collect();
 
         let current_node_id = self.new_node(
+            source_code,
             NodeKind::Node(current_rule.node_name.clone()),
             current_ts_node,
             current_rule.symbol.clone(),
@@ -53,15 +54,18 @@ impl RulesTranslator {
         );
         // TODO: has_error vs is_error
         for error_ts_node in children.iter().filter(|node| node.is_error()) {
-            current_node_id.append(self.new_error_node(error_ts_node, None), &mut self.arena);
+            current_node_id.append(
+                self.new_error_node(source_code, error_ts_node, None),
+                &mut self.arena,
+            );
         }
 
         for child in &current_rule.children {
-            self.query_parse_child(&children, child, current_node_id);
+            self.query_parse_child(source_code, &children, child, current_node_id);
         }
 
         for child in &LanguageDefinition::get().global_ast_rules {
-            self.query_parse_child(&children, child, current_node_id);
+            self.query_parse_child(source_code, &children, child, current_node_id);
         }
 
         current_node_id
@@ -69,6 +73,7 @@ impl RulesTranslator {
 
     fn query_parse_child(
         &mut self,
+        source_code: &str,
         children: &[tree_sitter::Node],
         child: &Child,
         current_node_id: NodeId,
@@ -130,12 +135,15 @@ impl RulesTranslator {
                 match node_or_rule {
                     DirectOrRule::Direct(node_kind) => {
                         if ts_node.has_error() {
-                            current_node_id
-                                .append(self.new_error_node(ts_node, None), &mut self.arena);
+                            current_node_id.append(
+                                self.new_error_node(source_code, ts_node, None),
+                                &mut self.arena,
+                            );
                         }
 
                         current_node_id.append(
                             self.new_node(
+                                source_code,
                                 NodeKind::Node(node_kind.clone()),
                                 &target_node,
                                 Symbol::None,
@@ -147,7 +155,10 @@ impl RulesTranslator {
                     }
                     DirectOrRule::Rule(name) => {
                         let rule = self.language_def.rule_with_name(name).unwrap().clone();
-                        current_node_id.append(self.parse(&rule, &target_node), &mut self.arena);
+                        current_node_id.append(
+                            self.parse(&rule, source_code, &target_node),
+                            &mut self.arena,
+                        );
                     }
                 }
             }
@@ -156,6 +167,7 @@ impl RulesTranslator {
 
     fn new_node(
         &mut self,
+        source_code: &str,
         kind: NodeKind,
         syntax_node: &tree_sitter::Node,
         symbol: Symbol,
@@ -165,7 +177,7 @@ impl RulesTranslator {
         self.arena.new_node(Node::new(
             kind,
             syntax_node,
-            &self.source_code,
+            source_code,
             symbol,
             import,
             semantic_token_type,
@@ -174,13 +186,14 @@ impl RulesTranslator {
 
     fn new_error_node(
         &mut self,
+        source_code: &str,
         syntax_node: &tree_sitter::Node,
         message: Option<String>,
     ) -> NodeId {
         self.arena.new_node(Node::new(
             NodeKind::Error(message),
             syntax_node,
-            &self.source_code,
+            source_code,
             Symbol::None,
             Import::None,
             None,

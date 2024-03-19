@@ -320,12 +320,17 @@ dependencies = [
 [[package]]
 name = "lever_framework"
 version = "0.1.0"
+dependencies = [
+ "lever_core",
+ "lever_gen",
+]
 
 [[package]]
 name = "lever_gen"
 version = "0.1.0"
 dependencies = [
  "lever_core",
+ "proc-macro2",
  "quote",
  "ron",
  "syn 2.0.52",

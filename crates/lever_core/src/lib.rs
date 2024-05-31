@@ -14,7 +14,7 @@ extern crate log;
 
 pub use language_def::*;
 pub use lsp_mappings::*;
-pub use project::Translator;
+pub use project::{Ast, Node, NodeKind, Translator};
 pub use setup::*;
 
 pub async fn start_server(setup: &Setup) {

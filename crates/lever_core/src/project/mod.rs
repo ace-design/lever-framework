@@ -4,4 +4,6 @@ mod features;
 mod file;
 mod metadata;
 
-pub use metadata::{AstQuery, NodeKind, SymbolTableQuery, Translator, VisitNode, Visitable};
+pub use metadata::{
+    Ast, AstQuery, Node, NodeKind, SymbolTableQuery, Translator, VisitNode, Visitable,
+};

@@ -12,4 +12,5 @@ members = [
 [dependencies]
 lever_core = { path = "crates/lever_core" }
 lever_gen = { path = "crates/lever_gen" }
-
+indextree = "4.5.0"
+tree-sitter = "0.20.9"

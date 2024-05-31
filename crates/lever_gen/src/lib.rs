@@ -8,12 +8,6 @@ use std::fs;
 use syn::parse_macro_input;
 
 use lever_core::LanguageDefinition;
-use lever_core::Translator;
-
-#[proc_macro]
-pub fn setup(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    quote!().into()
-}
 
 #[proc_macro]
 pub fn rules_translator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -31,8 +25,10 @@ pub fn rules_translator(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 
     let output = quote! {
         {
-            // Terrible
-            fn child_by_kind(node: &tree_sitter::Node, kind: &str) -> Option<tree_sitter::Node> {
+            fn child_by_kind<'a>(
+                node: &'a tree_sitter::Node,
+                kind: &'a str,
+            ) -> Option<tree_sitter::Node<'a>> {
                 let mut cursor = node.walk();
 
                 for child in node.children(&mut cursor) {
@@ -44,55 +40,61 @@ pub fn rules_translator(input: proc_macro::TokenStream) -> proc_macro::TokenStre
                 None
             }
 
-            fn new_node(
-                &mut self,
-                kind: NodeKind,
-                syntax_node: &tree_sitter::Node,
-                symbol: Symbol,
-                import: Import,
-                semantic_token_type: Option<HighlightType>,
-            ) -> NodeId {
-                self.arena.new_node(Node::new(
-                    kind,
-                    syntax_node,
-                    &self.source_code,
-                    symbol,
-                    import,
-                    semantic_token_type,
-                ))
-            }
-
-            fn new_error_node(
-                &mut self,
-                syntax_node: &tree_sitter::Node,
-                message: Option<String>,
-            ) -> NodeId {
-                self.arena.new_node(Node::new(
-                    NodeKind::Error(message),
-                    syntax_node,
-                    &self.source_code,
-                    Symbol::None,
-                    Import::None,
-                    None,
-                ))
-            }
-
             struct GeneratedRuleTranslator{
                 arena: indextree::Arena<Node>,
+                source_code: String,
             };
 
-            impl Translator for RulesTranslator {
-                fn translate(source_code: String, syntax_tree: tree_sitter::Tree) -> Ast {
-                    let root_id = translator.build();
-                    Ast::initialize(translator.arena, root_id)
+            impl Translator for GeneratedRuleTranslator {
+                fn translate(&mut self, source_code: &str, syntax_tree: tree_sitter::Tree) -> Ast {
+                    let root_id = self.parse_Root(&syntax_tree.root_node()).unwrap();
+                    self.source_code = source_code.to_string();
+                    Ast::initialize(self.arena.clone(), root_id) // TODO: Remove clone?
                 }
             }
 
             impl GeneratedRuleTranslator {
+
+                fn new_node(
+                    &mut self,
+                    kind: &str,
+                    syntax_node: &tree_sitter::Node,
+                    symbol: Symbol,
+                    import: Import,
+                    semantic_token_type: Option<HighlightType>,
+                ) -> NodeId {
+                    self.arena.new_node(Node::new(
+                        NodeKind::Node(kind.to_string()),
+                        syntax_node,
+                        &self.source_code,
+                        symbol,
+                        import,
+                        semantic_token_type,
+                    ))
+                }
+
+                fn new_error_node(
+                    &mut self,
+                    syntax_node: &tree_sitter::Node,
+                    message: Option<String>,
+                ) -> NodeId {
+                    self.arena.new_node(Node::new(
+                        NodeKind::Error(message),
+                        syntax_node,
+                        &self.source_code,
+                        Symbol::None,
+                        Import::None,
+                        None,
+                    ))
+                }
+
                 #(#rule_parsers)*
             }
 
-            GeneratedRuleTranslator { arena: indextree::Arena::new()}
+            GeneratedRuleTranslator {
+                arena: indextree::Arena::new(),
+                source_code: String::new()
+            }
         }
     };
 
@@ -100,7 +102,8 @@ pub fn rules_translator(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 }
 
 fn gen_parse_rule(rule: &Rule) -> proc_macro2::TokenStream {
-    let fn_name = format_ident!("parse_{}", rule.node_name);
+    let fn_name = format_ident!("parse_{}", &rule.node_name);
+    let kind = rule.node_name.clone();
 
     let children = rule
         .children
@@ -109,9 +112,13 @@ fn gen_parse_rule(rule: &Rule) -> proc_macro2::TokenStream {
         .collect::<Vec<proc_macro2::TokenStream>>();
 
     quote!(
-        fn #fn_name (node: &tree_sitter::Node) -> Option<indextree::NodeId> {
+        fn #fn_name (&mut self, node: &tree_sitter::Node) -> Option<indextree::NodeId> {
+            let node_id = self.new_node(#kind, node, Symbol::None, Import::None, None); // TODO:
+                                                                                           // Remove Nones
 
             #(#children)*
+
+            Some(node_id)
         }
     )
 }
@@ -122,21 +129,21 @@ fn gen_child(child: &Child) -> proc_macro2::TokenStream {
     match &child.rule {
         DirectOrRule::Direct(name) => {
             let highlight_type = if let Some(ht) = &child.highlight_type {
-                format!("HighlightType::{:?}", ht)
+                syn::parse_str(&format!("Some(HighlightType::{:?})", ht)).unwrap()
             } else {
-                "None".into()
+                quote!(None)
             };
 
             quote!(
-                if let Some(node) = #query {
+                if let Some(ts_node) = #query {
                     if ts_node.has_error() {
                         node_id
-                            .append(self.new_error_node(ts_node, None), &mut self.arena);
+                            .append(self.new_error_node(&ts_node, None), &mut self.arena);
                     }
 
                     node_id.append(
                         self.new_node(
-                            NodeKind::Node(#name),
+                            #name,
                             &node,
                             Symbol::None,
                             Import::None,
@@ -152,7 +159,7 @@ fn gen_child(child: &Child) -> proc_macro2::TokenStream {
 
             quote!(
                 if let Some(node) = #query {
-                    node_id.append(#fn_name(node));
+                    node_id.append(self.#fn_name(&node)?, &mut self.arena);
                 }
             )
         }

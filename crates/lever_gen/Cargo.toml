@@ -12,6 +12,7 @@ proc-macro2 = "1.0.79"
 quote = "1.0.35"
 ron = "0.8.1"
 syn = "2.0.52"
+indextree = "4.5.0"
 
 [lib]
 proc-macro = true

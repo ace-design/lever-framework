@@ -1,6 +1,6 @@
 pub use lever_core::{Ast, HighlightType, Import, Node, NodeKind, Setup, Symbol, Translator};
 pub use lever_gen::rules_translator;
-pub use {indextree, tree_sitter};
+pub use {indextree, tokio, tree_sitter};
 
 pub use crate::indextree::NodeId;
 

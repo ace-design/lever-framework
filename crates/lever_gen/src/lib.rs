@@ -10,6 +10,26 @@ use syn::parse_macro_input;
 use lever_core::LanguageDefinition;
 
 #[proc_macro]
+pub fn start_server(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    quote! {
+        #[tokio::main]
+        async fn main() {
+            let language_def = include_str!("../language_def/rules.ron");
+            let translator = Box::new(rules_translator!("language_def/rules.ron"));
+
+            let setup = Setup {
+                language_def: language_def.to_string(),
+                treesitter_language: tree_sitter_jpipe::language(),
+                translator: Box::leak(translator),
+            };
+
+            start_server(&setup).await
+        }
+    }
+    .into()
+}
+
+#[proc_macro]
 pub fn rules_translator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as syn::LitStr);
 

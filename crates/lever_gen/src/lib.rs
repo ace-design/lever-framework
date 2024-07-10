@@ -10,7 +10,9 @@ use syn::parse_macro_input;
 use lever_core::LanguageDefinition;
 
 #[proc_macro]
-pub fn start_server(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn start_server(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as syn::Expr);
+
     quote! {
         #[tokio::main]
         async fn main() {
@@ -19,7 +21,7 @@ pub fn start_server(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
             let setup = Setup {
                 language_def: language_def.to_string(),
-                treesitter_language: tree_sitter_jpipe::language(),
+                treesitter_language: #input,
                 translator: Box::leak(translator),
             };
 
